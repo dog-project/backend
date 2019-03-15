@@ -21,7 +21,7 @@ pg_pool = None
 
 def __connect(host):
     """
-    Helper function to connect to Postgres
+    Helper functions to connect to Postgres
     """
     global pg_pool
     pg_config['host'] = host
@@ -41,7 +41,7 @@ def select_example_table(request):
             # If production settings fail, use local development ones
             __connect('localhost')
 
-    # Remember to close SQL resources declared while running this function.
+    # Remember to close SQL resources declared while running this functions.
     # Keep any declared in global scope (e.g. pg_pool) for later reuse.
     with pg_pool.getconn().cursor() as cursor:
         cursor.execute("""SELECT * FROM example_table""")      

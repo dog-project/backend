@@ -22,7 +22,7 @@ pg_pool = None
 
 def __connect(host):
     """
-    Helper function to connect to Postgres
+    Helper functions to connect to Postgres
     """
     global pg_pool
     pg_config['host'] = host
@@ -45,7 +45,7 @@ def insert_example_table(request):
             __connect('localhost')
 
     
-    # Remember to close SQL resources declared while running this function.
+    # Remember to close SQL resources declared while running this functions.
     # Keep any declared in global scope (e.g. pg_pool) for later reuse.
     with pg_pool.getconn() as conn:
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
