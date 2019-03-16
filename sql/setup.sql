@@ -1,16 +1,9 @@
 CREATE TABLE dogs
 (
-  id    SERIAL PRIMARY KEY,
-  image BYTEA,
-  --   age
-  breed VARCHAR(100)
-);
-
-CREATE TABLE submissions
-(
-  id              SERIAL PRIMARY KEY,
-  email           VARCHAR(300),
-  submission_time TIMESTAMP,
-  dog_id          INTEGER,
-  FOREIGN KEY (dog_id) REFERENCES dogs (id)
+  id SERIAL PRIMARY KEY,
+  submission_time TIMESTAMP NOT NULL DEFAULT NOW(),
+  image BYTEA NOT NULL,
+  age_months INTEGER NOT NULL,
+  breed VARCHAR(100) NOT NULL,
+  submitter_email VARCHAR(300) NOT NULL UNIQUE
 );
