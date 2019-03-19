@@ -21,7 +21,7 @@ def get_dog(request):
               WHERE id = %s""",
                            (id,))
             out = dict(zip(
-                ("image", "dog_age", "dog_breed"),
+                ("image", "dog_age", "dog_breed", "dog_weight"),
                 cursor.fetchone()))
     # Convert from wacky in-memory format to byte-string, BYTEA
     out['image'] = str(bytes(out['image']), 'UTF-8')
