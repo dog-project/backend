@@ -1,3 +1,10 @@
+CREATE TABLE weights
+(
+  id INTEGER PRIMARY KEY,
+  lower INTEGER NOT NULL,
+  upper INTEGER NOT NULL
+);
+
 CREATE TABLE dogs
 (
   id SERIAL PRIMARY KEY,
@@ -9,12 +16,6 @@ CREATE TABLE dogs
   submitter_email VARCHAR(300) NOT NULL UNIQUE
 );
 
-CREATE TABLE weights
-(
-  id INTEGER PRIMARY KEY,
-  lower INTEGER NOT NULL,
-  upper INTEGER NOT NULL
-);
 
-INSERT INTO weights VALUES (0, 0, 10)
+INSERT INTO weights VALUES (0, 0, 10);
 -- ...
