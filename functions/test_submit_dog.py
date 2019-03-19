@@ -4,9 +4,9 @@ import random
 import string
 from unittest.mock import Mock
 
-from functions.submit_dog.main import submit_dog
+from main import submit_dog
 from main import get_dog
-from get_submission.main import get_submission
+from main import get_submission
 
 
 def mock_request(data):
@@ -18,9 +18,9 @@ def test_submit_dog_happy_path():
 
     data = {
         "image": image_data,
-        "age_months": 12,
-        "breed": "mutt",
-        "submitter_email": email,
+        "dog_age": 12,
+        "dog_breed": "mutt",
+        "user_email": email,
     }
 
     request = mock_request(data)
@@ -31,13 +31,13 @@ def test_submit_dog_happy_path():
 
     dog_data = get_dog(mock_request({"id": dog_id}))
     assert dog_data["image"] == image_data
-    assert dog_data["age_months"] == 12
-    assert dog_data["breed"] == "mutt"
+    assert dog_data["dog_age"] == 12
+    assert dog_data["dog_breed"] == "mutt"
 
 
-    submission_data = get_submission(mock_request({"submitter_email": email}))
+    submission_data = get_submission(mock_request({"user_email": email}))
     assert submission_data["image"] == image_data
-    assert submission_data["age_months"] == 12
-    assert submission_data["breed"] == "mutt"
+    assert submission_data["dog_age"] == 12
+    assert submission_data["dog_breed"] == "mutt"
     # Reasonable performance req
     assert (datetime.datetime.now() - submission_data['submission_time']).total_seconds() < 10

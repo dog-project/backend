@@ -1,3 +1,5 @@
+import json
+
 import psycopg2.extras
 
 from util.get_pool import get_pool
@@ -14,38 +16,42 @@ def get_dog(request):
         pg_pool = get_pool()
 
     with pg_pool.getconn() as conn:
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+        with conn.cursor() as cursor:
             cursor.execute("""
             SELECT image, age_months, breed
               FROM dogs
               WHERE id = %s""",
                            (id,))
-            out = cursor.fetchone()
+            out = dict(zip(
+                ("image", "dog_age", "dog_breed"),
+                cursor.fetchone()))
     # Convert from wacky in-memory format to byte-string, BYTEA
     out['image'] = bytes(out['image'])
-    return out
+    return json.dumps(out)
 
 
 def get_submission(request):
     global pg_pool
 
-    submitter_email = request.get_json()["submitter_email"]
+    submitter_email = request.get_json()["user_email"]
     assert isinstance(submitter_email, str)
 
     if not pg_pool:
         pg_pool = get_pool()
 
     with pg_pool.getconn() as conn:
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+        with conn.cursor() as cursor:
             cursor.execute("""
             SELECT image, age_months, breed, submission_time
               FROM dogs
               WHERE submitter_email = %s""",
                            (submitter_email,))
-            out = cursor.fetchone()
+            out = dict(zip(
+                ("image", "dog_age", "dog_breed", "submission_time"),
+                cursor.fetchone()))
     # Convert from wacky in-memory format to byte-string, BYTEA
     out['image'] = bytes(out['image'])
-    return out
+    return json.dumps(out)
 
 
 def submit_dog(request):
@@ -60,12 +66,12 @@ def submit_dog(request):
         with conn.cursor() as cursor:
             cursor.execute('INSERT INTO dogs (image, age_months, breed, submitter_email) VALUES (%s, %s, %s, %s);',
                            (request_json["image"],
-                            request_json["age_months"],
-                            request_json["breed"],
-                            request_json["submitter_email"]))
+                            request_json["dog_age"],
+                            request_json["dog_breed"],
+                            request_json["user_email"]))
 
-            cursor.execute("SELECT id FROM dogs WHERE submitter_email = %s", (request_json["submitter_email"],))
+            cursor.execute("SELECT id FROM dogs WHERE submitter_email = %s", (request_json["user_email"],))
             id = cursor.fetchone()[0]
 
         conn.commit()
-    return {"status": "OK", "id": id}
+    return json.dumps({"status": "OK", "id": id})

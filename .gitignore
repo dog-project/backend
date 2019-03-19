@@ -1,5 +1,6 @@
 data
 /**/.DS_Store
+.env.yaml
 
 
 # Created by https://www.gitignore.io/api/python,pycharm
@@ -20,8 +21,10 @@ data
 .idea/**/contentModel.xml
 
 # Sensitive or high-churn files
-.idea/**/dataSources/
 .idea/**/dataSources.ids
+.idea/**/dataSources/
+.idea/**/dataSources.xml
+.idea/dataSources.xml
 .idea/**/dataSources.local.xml
 .idea/**/sqlDataSources.xml
 .idea/**/dynamic.xml
