@@ -21,6 +21,7 @@ def test_submit_dog_happy_path():
         "dog_age": 12,
         "dog_breed": "mutt",
         "user_email": email,
+        "dog_weight": 1
     }
 
     request = mock_request(data)
@@ -33,11 +34,13 @@ def test_submit_dog_happy_path():
     assert dog_data["image"] == image_data
     assert dog_data["dog_age"] == 12
     assert dog_data["dog_breed"] == "mutt"
+    assert dog_data["dog_weight"] == 1
 
 
     submission_data = get_submission(mock_request({"user_email": email}))
     assert submission_data["image"] == image_data
     assert submission_data["dog_age"] == 12
     assert submission_data["dog_breed"] == "mutt"
+    assert submission_data["dog_weight"] == 1
     # Reasonable performance req
     assert (datetime.datetime.now() - submission_data['submission_time']).total_seconds() < 10
