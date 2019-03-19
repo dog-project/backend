@@ -26,7 +26,7 @@ def get_dog(request):
                 ("image", "dog_age", "dog_breed"),
                 cursor.fetchone()))
     # Convert from wacky in-memory format to byte-string, BYTEA
-    out['image'] = bytes(out['image'])
+    out['image'] = str(bytes(out['image']), 'UTF-8')
     return json.dumps(out)
 
 
@@ -50,7 +50,7 @@ def get_submission(request):
                 ("image", "dog_age", "dog_breed", "submission_time"),
                 cursor.fetchone()))
     # Convert from wacky in-memory format to byte-string, BYTEA
-    out['image'] = bytes(out['image'])
+    out['image'] = str(bytes(out['image']), 'UTF-8')
     return json.dumps(out)
 
 
