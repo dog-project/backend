@@ -5,7 +5,7 @@ import string
 from unittest.mock import Mock
 
 from functions.submit_dog.main import submit_dog
-from get_dog.main import get_dog
+from main import get_dog
 from get_submission.main import get_submission
 
 
