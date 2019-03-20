@@ -26,7 +26,7 @@ def test_submit_dog_happy_path():
     }
 
     request = mock_request(data)
-    r = json.loads(submit_dog(request))
+    r = json.loads(submit_dog(request)[0])
     assert r['status'] == "OK"
     assert 'id' in r
     dog_id = r['id']
