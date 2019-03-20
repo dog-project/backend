@@ -1,3 +1,4 @@
+
 from os import getenv
 from psycopg2 import OperationalError
 from psycopg2.pool import SimpleConnectionPool
@@ -17,14 +18,14 @@ pg_config = {
 
 def get_pool():
     try:
-        return __connect(f'/cloudsql/{INSTANCE_CONNECTION_NAME}')
+        return __connect(f'/cloudsql/{INSTANCE_CONNECTION_NAME}', 50)
     except OperationalError:
         # If production settings fail, use local development ones
-        return __connect('localhost')
+        return __connect('localhost', 3)
 
-def __connect(host):
+def __connect(host, max_connections):
     """
     Helper functions to connect to Postgres
     """
     pg_config['host'] = host
-    return SimpleConnectionPool(1, 25, **pg_config)
+    return SimpleConnectionPool(1, max_connections, **pg_config)

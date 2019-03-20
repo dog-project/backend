@@ -31,7 +31,7 @@ def test_submit_dog_happy_path():
     assert 'id' in r
     dog_id = r['id']
 
-    dog_data = json.loads(get_dog(mock_request({"id": dog_id})))
+    dog_data = json.loads(get_dog(mock_request({"id": dog_id}))[0])
     assert dog_data["image"] == str(image_data, 'UTF-8')
     assert dog_data["dog_age"] == 12
     assert dog_data["dog_breed"] == "mutt"
@@ -39,15 +39,15 @@ def test_submit_dog_happy_path():
            {
            "id": 0,
            "lower": 0,
-           "upper": 10  # Assumes existence of a range 0 to 10 and index 0
+           "upper": 12  # Assumes existence of a range 0 to 12 at index 0
            }
 
 
-    submission_data = json.loads(get_submission(mock_request({"user_email": email})))
+    submission_data = json.loads(get_submission(mock_request({"user_email": email}))[0])
     assert submission_data["image"] == str(image_data, 'UTF-8')
     assert submission_data["dog_age"] == 12
     assert submission_data["dog_breed"] == "mutt"
-    assert submission_data["dog_weight"] == {'id': 0, 'lower': 0, 'upper': 10}
+    assert submission_data["dog_weight"] == {'id': 0, 'lower': 0, 'upper': 12}
     # Reasonable performance req
     assert (datetime.datetime.now()
             - datetime.datetime.strptime(submission_data['submission_time'], "%Y-%m-%d %H:%M:%S.%f"))\

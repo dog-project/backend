@@ -1,5 +1,3 @@
-DROP TABLE weights; DROP TABLE dogs;
-
 CREATE TABLE weights
 (
   id INTEGER PRIMARY KEY,
@@ -19,4 +17,8 @@ CREATE TABLE dogs
 );
 
 
-INSERT INTO weights VALUES (0, 0, 10);
+INSERT INTO weights VALUES (0, 0, 12);
+INSERT INTO weights VALUES (1, 13, 25);
+INSERT INTO weights VALUES (2, 26, 50);
+INSERT INTO weights VALUES (3, 51, 100);
+INSERT INTO weights VALUES (4, 100, 500);
