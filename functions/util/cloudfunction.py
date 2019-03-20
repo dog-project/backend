@@ -5,11 +5,6 @@ import traceback
 from google.auth.exceptions import DefaultCredentialsError
 
 from util.get_pool import get_pool
-from google.cloud import error_reporting
-try:
-    google_error_reporting_client = error_reporting.Client()
-except DefaultCredentialsError:
-    google_error_reporting_client = None
 
 pg_pool = None
 
@@ -52,8 +47,7 @@ def cloudfunction(f):
             function_output = f(request, pg_pool)
             return (json.dumps(function_output), 200, headers)
         except:
-            if google_error_reporting_client:
-                google_error_reporting_client.report_exception()
+            traceback.print_exc()
             return (traceback.format_exc(), 500, headers)
 
 
