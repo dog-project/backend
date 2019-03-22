@@ -18,7 +18,7 @@ pg_config = {
 
 def get_pool():
     try:
-        return __connect(f'/cloudsql/{INSTANCE_CONNECTION_NAME}', 50)
+        return __connect(f'/cloudsql/{INSTANCE_CONNECTION_NAME}', 5)
     except OperationalError:
         # If production settings fail, use local development ones
         return __connect('localhost', 3)

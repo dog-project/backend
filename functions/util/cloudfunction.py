@@ -2,7 +2,6 @@ import functools
 import json
 import traceback
 
-from google.auth.exceptions import DefaultCredentialsError
 
 from util.get_pool import get_pool
 
