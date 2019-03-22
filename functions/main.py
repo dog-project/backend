@@ -3,7 +3,7 @@ from util.cloudfunction import cloudfunction
 
 @cloudfunction
 def get_dog(request_json, pg_pool):
-    id = request_json()["id"]
+    id = request_json["id"]
     assert isinstance(id, int)
 
     with pg_pool.getconn() as conn:

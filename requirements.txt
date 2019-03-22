@@ -1,3 +1,2 @@
 psycopg2
 pytest
-google-cloud-error_reporting

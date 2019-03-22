@@ -2,17 +2,6 @@ import functools
 import json
 import traceback
 
-# Imports the Google Cloud client library
-import google.cloud.logging
-
-# Instantiates a client
-client = google.cloud.logging.Client()
-
-# Connects the logger to the root logging handler; by default this captures
-# all logs at INFO level and higher
-client.setup_logging()
-import logging
-
 
 from util.get_pool import get_pool
 
@@ -30,8 +19,6 @@ def cloudfunction(f):
     @functools.wraps(f)
     def with_cors_header(request):
         global pg_pool
-
-        logger = client.logger(f.__name__)
 
         # If given an OPTIONS request, tell the requester that we allow all CORS requests (pre-flight stage)
         if request.method == 'OPTIONS':
@@ -58,8 +45,12 @@ def cloudfunction(f):
         request_json = request.get_json()
         print(repr(request_json))
         # TODO log errors here
-        function_output = f(request_json, pg_pool)
-        return (json.dumps(function_output), 200, headers)
+        try:
+            function_output = f(request_json, pg_pool)
+            return (json.dumps(function_output), 200, headers)
+        except:
+            print("Error: Exception traceback: " + repr(traceback.format_exc()))
+            return (traceback.format_exc(), 500, headers)
 
     return with_cors_header
 
