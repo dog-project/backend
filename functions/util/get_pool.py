@@ -1,4 +1,3 @@
-
 from os import getenv
 from psycopg2 import OperationalError
 from psycopg2.pool import SimpleConnectionPool
@@ -22,6 +21,7 @@ def get_pool():
     except OperationalError:
         # If production settings fail, use local development ones
         return __connect('localhost', 3)
+
 
 def __connect(host, max_connections):
     """

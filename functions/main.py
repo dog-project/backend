@@ -2,8 +2,8 @@ from util.cloudfunction import cloudfunction
 
 
 @cloudfunction
-def get_dog(request, pg_pool):
-    id = request.get_json()["id"]
+def get_dog(request_json, pg_pool):
+    id = request_json()["id"]
     assert isinstance(id, int)
 
     with pg_pool.getconn() as conn:
@@ -27,8 +27,8 @@ def get_dog(request, pg_pool):
 
 
 @cloudfunction
-def get_submission(request, pg_pool):
-    submitter_email = request.get_json()["user_email"]
+def get_submission(request_json, pg_pool):
+    submitter_email = request_json["user_email"]
     assert isinstance(submitter_email, str)
 
     with pg_pool.getconn() as conn:
@@ -54,8 +54,8 @@ def get_submission(request, pg_pool):
 
 
 @cloudfunction
-def submit_dog(request, pg_pool):
-    request_json = request.get_json()
+def submit_dog(request_json, pg_pool):
+    request_json = request_json
 
     with pg_pool.getconn() as conn:
         with conn.cursor() as cursor:
