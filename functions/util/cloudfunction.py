@@ -46,7 +46,9 @@ def cloudfunction(f):
         print(repr(request_json))
         # TODO log errors here
         try:
-            function_output = f(request_json, pg_pool)
+            conn = pg_pool.getconn()
+            function_output = f(request_json, conn)
+            pg_pool.putconn(conn)
             return (json.dumps(function_output), 200, headers)
         except:
             print("Error: Exception traceback: " + repr(traceback.format_exc()))
