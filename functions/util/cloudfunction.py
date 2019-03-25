@@ -7,14 +7,16 @@ from util.get_pool import get_pool
 
 pg_pool = None
 
-def cloudfunction(f):
-    """ Wraps a function with two arguments, the first of which is a Flask request, and the second is a
-    postgresql pool, and modified it:
-     - sets CORS headers and responds to OPTIONS requests to Allow-Origin *
 
+def cloudfunction(f):
+    """ Wraps a function with two arguments, the first of which is a json object that it expects to be sent with the
+    request, and the second is a postgresql pool. It modifies it by:
+     - setting CORS headers and responding to OPTIONS requests with `Allow-Origin *`
+     - passing a connection from a global postgres connection pool
+     - adding logging, of all inputs as well as error tracebacks.
 
     :param f: A function that takes a `request` and a `pgpool` and returns a json-serializable object
-    :return: a function that calls f, but with CORS pre-flight handling and postgres connection pooling.
+    :return: a function that accepts one argument, a Flask request, and calls f with the modifications listed
     """
     @functools.wraps(f)
     def with_cors_header(request):
@@ -43,13 +45,17 @@ def cloudfunction(f):
             pg_pool = get_pool()
 
         request_json = request.get_json()
-        print(repr(request_json))
-        # TODO log errors here
+        print(repr({"request_json": request_json}))
+
         try:
             conn = pg_pool.getconn()
             function_output = f(request_json, conn)
             pg_pool.putconn(conn)
-            return (json.dumps(function_output), 200, headers)
+
+            response_json = json.dumps(function_output)
+            print(repr({"response_json": response_json}))
+
+            return (response_json, 200, headers)
         except:
             print("Error: Exception traceback: " + repr(traceback.format_exc()))
             return (traceback.format_exc(), 500, headers)
