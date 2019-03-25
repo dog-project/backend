@@ -7,7 +7,7 @@ from unittest.mock import Mock
 
 from main import submit_dog
 from main import get_dog
-from main import get_submission
+from main import get_submissions
 
 
 def mock_request(data):
@@ -15,7 +15,7 @@ def mock_request(data):
 
 def test_submit_dog_happy_path():
     image_data = base64.b64encode(b"This is a test image")
-    email = ''.join(random.choices(string.ascii_lowercase, k=30)) + "@example.com"
+    email = ''.join("test@example.com")
 
     data = {
         "image": image_data,
@@ -43,7 +43,10 @@ def test_submit_dog_happy_path():
            }
 
 
-    submission_data = json.loads(get_submission(mock_request({"user_email": email}))[0])
+    submissions = json.loads(get_submissions(mock_request({"user_email": email}))[0])
+    print(submissions)
+    submission_data = submissions[-1]
+
     assert submission_data["image"] == str(image_data, 'UTF-8')
     assert submission_data["dog_age"] == 12
     assert submission_data["dog_breed"] == "mutt"

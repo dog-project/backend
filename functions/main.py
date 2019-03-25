@@ -1,7 +1,7 @@
 from util.cloudfunction import cloudfunction
 
 
-@cloudfunction
+@cloudfunction()
 def get_dog(request_json, conn):
     id = request_json["id"]
     assert isinstance(id, int)
@@ -25,7 +25,7 @@ def get_dog(request_json, conn):
     return out
 
 
-@cloudfunction
+@cloudfunction()
 def get_submissions(request_json, conn):
     submitter_email = request_json["user_email"]
     assert isinstance(submitter_email, str)
@@ -58,7 +58,7 @@ def get_submissions(request_json, conn):
     return out
 
 
-@cloudfunction
+@cloudfunction()
 def submit_dog(request_json, conn):
     request_json = request_json
 
@@ -77,3 +77,49 @@ def submit_dog(request_json, conn):
     conn.commit()
     out = {"status": "OK", "id": id}
     return out
+
+
+@cloudfunction(input_json=False)
+def get_dog_pair(conn):
+    with conn.cursor() as cursor:
+        cursor.execute("""SELECT id FROM dogs ORDER BY RANDOM()""")
+        ids = [cursor.fetchone()[0] for i in range(2)]
+    return {
+        "dog1": ids[0],
+        "dog2": ids[1]
+    }
+
+
+@cloudfunction()
+def submit_vote(request_json, conn):
+    id1 = request_json["dog1_id"]
+    id2 = request_json["dog2_id"]
+    winner = request_json["winner"]
+
+    # A mapping from `winner` to results in the vote.
+    result = {
+        -1: "tie",
+        id1: "win",
+        id2: "loss"
+    }
+
+    with conn.cursor() as cursor:
+        cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result) VALUES (%s, %s, %s)""",
+                       (id1, id2, result[winner]))
+
+
+@cloudfunction()
+def get_votes(request_json, conn):
+    dog_id = request_json["id"]
+    with conn.cursor() as cursor:
+        cursor.execute("""
+        WITH losers AS (
+          SELECT dog2_id AS dog FROM votes WHERE dog1_id = %s AND result = 'win'
+          UNION ALL
+          SELECT dog1_id AS dog FROM votes WHERE dog2_id = %s AND result = 'loss'
+        )
+        SELECT dog, COUNT(*) FROM losers GROUP BY dog;
+        """, (dog_id, dog_id))
+        out = {str(row[0]): row[1] for row in cursor}
+        print("votes out", out)
+        return out
