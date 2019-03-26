@@ -195,7 +195,15 @@ def submit_vote(request_json, conn):
     out_schema={
         "type": "object",
         "patternProperties": {
-            "^[0-9]+$": {"type": "number"}
+            # this one is hard to read, but says keys are strings made of digits (dog ids)
+            "^[0-9]+$": {
+                "type": "object",
+                "properties": {
+                    "wins": {"type": "number"},
+                    "losses": {"type": "number"},
+                    "ties": {"type": "number"}
+                }
+            }
         },
         "additionalProperties": False
     }
@@ -204,11 +212,40 @@ def get_votes(request_json, conn):
     dog_id = request_json["id"]
     with conn.cursor() as cursor:
         cursor.execute("""
-        WITH losers AS (
+        WITH wins AS (
           SELECT dog2_id AS dog FROM votes WHERE dog1_id = %s AND result = 'win'
           UNION ALL
           SELECT dog1_id AS dog FROM votes WHERE dog2_id = %s AND result = 'loss'
         )
-        SELECT dog, COUNT(*) FROM losers GROUP BY dog;
+        SELECT dog, COUNT(*) FROM wins GROUP BY dog;
         """, (dog_id, dog_id))
-        return {str(row[0]): row[1] for row in cursor}
+        wins = {str(row[0]): row[1] for row in cursor}
+
+        cursor.execute("""
+        WITH losses AS (
+          SELECT dog2_id AS dog FROM votes WHERE dog1_id = %s AND result = 'loss'
+          UNION ALL
+          SELECT dog1_id AS dog FROM votes WHERE dog2_id = %s AND result = 'win'
+        )
+        SELECT dog, COUNT(*) FROM losses GROUP BY dog;
+        """, (dog_id, dog_id))
+        losses = {str(row[0]): row[1] for row in cursor}
+
+        cursor.execute("""
+        WITH ties AS (
+          SELECT dog2_id AS dog FROM votes WHERE dog1_id = %s AND result = 'tie'
+          UNION ALL
+          SELECT dog1_id AS dog FROM votes WHERE dog2_id = %s AND result = 'tie'
+        )
+        SELECT dog, COUNT(*) FROM ties GROUP BY dog;
+        """, (dog_id, dog_id))
+        ties = {str(row[0]): row[1] for row in cursor}
+
+        out = {}
+        for key in {*wins.keys(), *losses.keys(), *ties.keys()}:
+            out[key] = {
+                "wins": wins.get(key, 0),
+                "ties": ties.get(key, 0),
+                "losses": losses.get(key, 0),
+            }
+        return out

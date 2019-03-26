@@ -41,14 +41,16 @@ def test_get_dog_pair():
     }
 
     def get_votes_dog1(id1, id2):
-        return json.loads(get_votes(mock_request({"id": id1}))[0]).get(str(id2), 0)
+        return json.loads(get_votes(mock_request({"id": id1}))[0]).get(str(id2), {"wins": 0, "losses": 0, "ties": 0})
 
     vote_count = get_votes_dog1(id1, id2)
     submit_vote(mock_request(voteFor1))
 
     vote_count_after = get_votes_dog1(id1, id2)
 
-    assert vote_count_after == vote_count + 1
+    assert vote_count_after["wins"] == vote_count["wins"] + 1
+    assert vote_count_after["losses"] == vote_count["losses"]
+    assert vote_count_after["ties"] == vote_count["ties"]
 
     result = json.loads(get_dog_pair(mock_request(None))[0])
     id1 = result["dog1"]
@@ -64,5 +66,6 @@ def test_get_dog_pair():
     vote_count = get_votes_dog1(id1, id2)
     submit_vote(mock_request(tie_vote))
     vote_count_after = get_votes_dog1(id1, id2)
-
-    assert vote_count_after == vote_count
+    assert vote_count_after["wins"] == vote_count["wins"]
+    assert vote_count_after["losses"] == vote_count["losses"]
+    assert vote_count_after["ties"] == vote_count["ties"] + 1
