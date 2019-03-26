@@ -2,18 +2,31 @@ from util.cloudfunction import cloudfunction
 from jsonschema import validate
 
 
-@cloudfunction()
-def get_dog(request_json, conn):
-    in_schema = {
+@cloudfunction(
+    in_schema={
         "type": "object",
         "properties": {
-            "id": {"type": "number"}
+            "id": {"type": "integer"}
+        }
+    },
+    out_schema={
+        "type": "object",
+        "properties": {
+            "image": {"type": "string"},
+            "dog_age": {"type": "number"},
+            "dog_breed": {"type": "string"},
+            "dog_weight": {
+                "type": "object", "properties": {
+                    "id": {"type": "number"},
+                    "lower": {"type": "number"},
+                    "upper": {"type": "number"}
+                }
+            }
         }
     }
-    validate(request_json, in_schema)
-
+)
+def get_dog(request_json, conn):
     id = request_json["id"]
-    assert isinstance(id, int)
 
     with conn.cursor() as cursor:
         cursor.execute("""
@@ -29,41 +42,41 @@ def get_dog(request_json, conn):
                       FROM weights
                       WHERE id = %s""", (out["dog_weight"],))
         out["dog_weight"] = dict(zip(("id", "lower", "upper"), cursor.fetchone()))
+
     # Convert from wacky in-memory format to byte-string, BYTEA
     out['image'] = str(bytes(out['image']), 'UTF-8')
-
-    out_schema = {
-        "type": "object",
-        "properties": {
-            "image": {"type": "string"},
-            "dog_age": {"type": "number"},
-            "dog_breed": {"type": "string"},
-            "dog_weight": {
-                "type": "object", "properties": {
-                    "id": {"type": "number"},
-                    "lower": {"type": "number"},
-                    "upper": {"type": "number"}
-                }
-            }
-        }
-    }
-
-    validate(out, out_schema)
     return out
 
 
-@cloudfunction()
-def get_submissions(request_json, conn):
-    in_schema = {
+@cloudfunction(
+    in_schema={
         "type": "object",
         "properties": {
             "user_email": {"type": "string"}
         }
+    },
+    out_schema={
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "image": {"type": "string"},
+                "dog_age": {"type": "number"},
+                "dog_breed": {"type": "string"},
+                "submission_time": {"type": "string"},
+                "dog_weight": {
+                    "type": "object", "properties": {
+                        "id": {"type": "number"},
+                        "lower": {"type": "number"},
+                        "upper": {"type": "number"}
+                    }
+                }
+            }
+        }
     }
-    validate(request_json, in_schema)
-
+)
+def get_submissions(request_json, conn):
     submitter_email = request_json["user_email"]
-    assert isinstance(submitter_email, str)
 
     with conn.cursor() as cursor:
         cursor.execute("""
@@ -89,34 +102,11 @@ def get_submissions(request_json, conn):
             row_dict['image'] = str(bytes(row_dict['image']), 'UTF-8')
             row_dict['submission_time'] = str(row_dict['submission_time'])
             out.append(row_dict)
-
-    out_schema = {
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                "image": {"type": "string"},
-                "dog_age": {"type": "number"},
-                "dog_breed": {"type": "string"},
-                "submission_time": {"type": "string"},
-                "dog_weight": {
-                    "type": "object", "properties": {
-                        "id": {"type": "number"},
-                        "lower": {"type": "number"},
-                        "upper": {"type": "number"}
-                    }
-                }
-            }
-        }
-    }
-
-    validate(out, out_schema)
     return out
 
 
-@cloudfunction()
-def submit_dog(request_json, conn):
-    in_schema = {
+@cloudfunction(
+    in_schema={
         "type": "object",
         "properties": {
             "image": {"type": "string"},
@@ -125,9 +115,12 @@ def submit_dog(request_json, conn):
             "dog_weight": {"type": "integer"},
             "user_email": {"type": "string"}
         }
+    },
+    out_schema={
+        "type": "number"
     }
-    validate(request_json, in_schema)
-
+)
+def submit_dog(request_json, conn):
     with conn.cursor() as cursor:
         cursor.execute(
             'INSERT INTO dogs (image, age_months, breed, weight_id, submitter_email) VALUES (%s, %s, %s, %s, %s);',
@@ -141,13 +134,7 @@ def submit_dog(request_json, conn):
         id = cursor.fetchone()[0]
 
     conn.commit()
-
-    out = id
-    out_schema = {
-        "type": "number"
-    }
-    validate(out, out_schema)
-    return out
+    return id
 
 
 @cloudfunction(input_json=False)
@@ -171,17 +158,17 @@ def get_dog_pair(conn):
     return out
 
 
-@cloudfunction()
-def submit_vote(request_json, conn):
-    in_schema = {
+@cloudfunction(
+    in_schema={
         "type": "object",
         "properties": {
             "dog1_id": {"type": "integer"},
             "dog2_id": {"type": "integer"},
             "winner": {"type": "integer"},
         }
-    }
-    validate(request_json, in_schema)
+    },
+)
+def submit_vote(request_json, conn):
     id1 = request_json["dog1_id"]
     id2 = request_json["dog2_id"]
     winner = request_json["winner"]
@@ -198,16 +185,22 @@ def submit_vote(request_json, conn):
                        (id1, id2, result[winner]))
 
 
-@cloudfunction()
-def get_votes(request_json, conn):
-    in_schema = {
+@cloudfunction(
+    in_schema={
         "type": "object",
         "properties": {
             "id": {"type": "integer"}
         }
+    },
+    out_schema={
+        "type": "object",
+        "patternProperties": {
+            "^[0-9]+$": {"type": "number"}
+        },
+        "additionalProperties": False
     }
-    validate(request_json, in_schema)
-
+)
+def get_votes(request_json, conn):
     dog_id = request_json["id"]
     with conn.cursor() as cursor:
         cursor.execute("""
@@ -218,16 +211,4 @@ def get_votes(request_json, conn):
         )
         SELECT dog, COUNT(*) FROM losers GROUP BY dog;
         """, (dog_id, dog_id))
-        out = {str(row[0]): row[1] for row in cursor}
-
-
-    out_schema = {
-        "type": "object",
-        "patternProperties": {
-            "^[0-9]+$": {"type": "number"}
-        },
-        "additionalProperties": False
-    }
-
-    validate(out, out_schema)
-    return out
+        return {str(row[0]): row[1] for row in cursor}

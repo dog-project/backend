@@ -2,13 +2,14 @@ import functools
 import json
 import traceback
 
+from jsonschema import validate
 
 from util.get_pool import get_pool
 
 pg_pool = None
 
 
-def cloudfunction(input_json=True):
+def cloudfunction(input_json=True, in_schema = None, out_schema=None):
     """
 
     :param input_json: if True, the child function is passed the json from the request, otherwise not
@@ -56,10 +57,16 @@ def cloudfunction(input_json=True):
 
                 if input_json:
                     request_json = request.get_json()
+                    if in_schema:
+                        validate(request_json, in_schema)
+
                     print(repr({"request_json": request_json}))
                     function_output = f(request_json, conn)
                 else:
                     function_output = f(conn)
+
+                if out_schema:
+                    validate(function_output, out_schema)
 
                 conn.commit()
                 pg_pool.putconn(conn)
