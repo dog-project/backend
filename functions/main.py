@@ -121,5 +121,4 @@ def get_votes(request_json, conn):
         SELECT dog, COUNT(*) FROM losers GROUP BY dog;
         """, (dog_id, dog_id))
         out = {str(row[0]): row[1] for row in cursor}
-        print("votes out", out)
         return out
