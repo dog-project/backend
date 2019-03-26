@@ -211,34 +211,22 @@ def submit_vote(request_json, conn):
 def get_votes(request_json, conn):
     dog_id = request_json["id"]
     with conn.cursor() as cursor:
-        cursor.execute("""
+        select = """
         WITH wins AS (
-          SELECT dog2_id AS dog FROM votes WHERE dog1_id = %s AND result = 'win'
+          SELECT dog2_id AS dog FROM votes WHERE dog1_id = %s AND result = %s
           UNION ALL
-          SELECT dog1_id AS dog FROM votes WHERE dog2_id = %s AND result = 'loss'
+          SELECT dog1_id AS dog FROM votes WHERE dog2_id = %s AND result = %s
         )
         SELECT dog, COUNT(*) FROM wins GROUP BY dog;
-        """, (dog_id, dog_id))
+        """
+
+        cursor.execute(select, (dog_id, 'win', dog_id, 'loss'))
         wins = {str(row[0]): row[1] for row in cursor}
 
-        cursor.execute("""
-        WITH losses AS (
-          SELECT dog2_id AS dog FROM votes WHERE dog1_id = %s AND result = 'loss'
-          UNION ALL
-          SELECT dog1_id AS dog FROM votes WHERE dog2_id = %s AND result = 'win'
-        )
-        SELECT dog, COUNT(*) FROM losses GROUP BY dog;
-        """, (dog_id, dog_id))
+        cursor.execute(select, (dog_id, 'loss', dog_id, 'win'))
         losses = {str(row[0]): row[1] for row in cursor}
 
-        cursor.execute("""
-        WITH ties AS (
-          SELECT dog2_id AS dog FROM votes WHERE dog1_id = %s AND result = 'tie'
-          UNION ALL
-          SELECT dog1_id AS dog FROM votes WHERE dog2_id = %s AND result = 'tie'
-        )
-        SELECT dog, COUNT(*) FROM ties GROUP BY dog;
-        """, (dog_id, dog_id))
+        cursor.execute(select, (dog_id, 'tie', dog_id, 'tie'))
         ties = {str(row[0]): row[1] for row in cursor}
 
         out = {}
