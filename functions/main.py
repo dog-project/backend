@@ -1,8 +1,17 @@
 from util.cloudfunction import cloudfunction
+from jsonschema import validate
 
 
 @cloudfunction()
 def get_dog(request_json, conn):
+    in_schema = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "number"}
+        }
+    }
+    validate(request_json, in_schema)
+
     id = request_json["id"]
     assert isinstance(id, int)
 
@@ -22,11 +31,37 @@ def get_dog(request_json, conn):
         out["dog_weight"] = dict(zip(("id", "lower", "upper"), cursor.fetchone()))
     # Convert from wacky in-memory format to byte-string, BYTEA
     out['image'] = str(bytes(out['image']), 'UTF-8')
+
+    out_schema = {
+        "type": "object",
+        "properties": {
+            "image": {"type": "string"},
+            "dog_age": {"type": "number"},
+            "dog_breed": {"type": "string"},
+            "dog_weight": {
+                "type": "object", "properties": {
+                    "id": {"type": "number"},
+                    "lower": {"type": "number"},
+                    "upper": {"type": "number"}
+                }
+            }
+        }
+    }
+
+    validate(out, out_schema)
     return out
 
 
 @cloudfunction()
 def get_submissions(request_json, conn):
+    in_schema = {
+        "type": "object",
+        "properties": {
+            "user_email": {"type": "string"}
+        }
+    }
+    validate(request_json, in_schema)
+
     submitter_email = request_json["user_email"]
     assert isinstance(submitter_email, str)
 
@@ -55,12 +90,43 @@ def get_submissions(request_json, conn):
             row_dict['submission_time'] = str(row_dict['submission_time'])
             out.append(row_dict)
 
+    out_schema = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "image": {"type": "string"},
+                "dog_age": {"type": "number"},
+                "dog_breed": {"type": "string"},
+                "submission_time": {"type": "string"},
+                "dog_weight": {
+                    "type": "object", "properties": {
+                        "id": {"type": "number"},
+                        "lower": {"type": "number"},
+                        "upper": {"type": "number"}
+                    }
+                }
+            }
+        }
+    }
+
+    validate(out, out_schema)
     return out
 
 
 @cloudfunction()
 def submit_dog(request_json, conn):
-    request_json = request_json
+    in_schema = {
+        "type": "object",
+        "properties": {
+            "image": {"type": "string"},
+            "dog_age": {"type": "integer"},
+            "dog_breed": {"type": "string"},
+            "dog_weight": {"type": "integer"},
+            "user_email": {"type": "string"}
+        }
+    }
+    validate(request_json, in_schema)
 
     with conn.cursor() as cursor:
         cursor.execute(
@@ -75,7 +141,12 @@ def submit_dog(request_json, conn):
         id = cursor.fetchone()[0]
 
     conn.commit()
-    out = {"status": "OK", "id": id}
+
+    out = id
+    out_schema = {
+        "type": "number"
+    }
+    validate(out, out_schema)
     return out
 
 
@@ -84,14 +155,33 @@ def get_dog_pair(conn):
     with conn.cursor() as cursor:
         cursor.execute("""SELECT id FROM dogs ORDER BY RANDOM()""")
         ids = [cursor.fetchone()[0] for i in range(2)]
-    return {
+    out = {
         "dog1": ids[0],
         "dog2": ids[1]
     }
 
+    out_schema = {
+        "type": "object",
+        "properties": {
+            "dog1": {"type": "integer"},
+            "dog2": {"type": "integer"}
+        }
+    }
+    validate(out, out_schema)
+    return out
+
 
 @cloudfunction()
 def submit_vote(request_json, conn):
+    in_schema = {
+        "type": "object",
+        "properties": {
+            "dog1_id": {"type": "integer"},
+            "dog2_id": {"type": "integer"},
+            "winner": {"type": "integer"},
+        }
+    }
+    validate(request_json, in_schema)
     id1 = request_json["dog1_id"]
     id2 = request_json["dog2_id"]
     winner = request_json["winner"]
@@ -110,6 +200,14 @@ def submit_vote(request_json, conn):
 
 @cloudfunction()
 def get_votes(request_json, conn):
+    in_schema = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "integer"}
+        }
+    }
+    validate(request_json, in_schema)
+
     dog_id = request_json["id"]
     with conn.cursor() as cursor:
         cursor.execute("""
@@ -121,4 +219,15 @@ def get_votes(request_json, conn):
         SELECT dog, COUNT(*) FROM losers GROUP BY dog;
         """, (dog_id, dog_id))
         out = {str(row[0]): row[1] for row in cursor}
-        return out
+
+
+    out_schema = {
+        "type": "object",
+        "patternProperties": {
+            "^[0-9]+$": {"type": "number"}
+        },
+        "additionalProperties": False
+    }
+
+    validate(out, out_schema)
+    return out

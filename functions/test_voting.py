@@ -40,7 +40,6 @@ def test_get_dog_pair():
         "winner": id1
     }
 
-
     def get_votes_dog1(id1, id2):
         return json.loads(get_votes(mock_request({"id": id1}))[0]).get(str(id2), 0)
 
