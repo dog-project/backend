@@ -7,7 +7,9 @@ from jsonschema import validate
         "type": "object",
         "properties": {
             "id": {"type": "integer"}
-        }
+        },
+        "additionalProperties": False,
+        "minProperties": 1,
     },
     out_schema={
         "type": "object",
@@ -16,15 +18,19 @@ from jsonschema import validate
             "dog_age": {"type": "number"},
             "dog_breed": {"type": "string"},
             "dog_weight": {
-                "type": "object", "properties": {
+                "type": "object",
+                "properties": {
                     "id": {"type": "number"},
                     "lower": {"type": "number"},
                     "upper": {"type": "number"}
-                }
+                },
+                "additionalProperties": False,
+                "minProperties": 3,
             }
-        }
-    }
-)
+        },
+        "additionalProperties": False,
+        "minProperties": 4,
+    })
 def get_dog(request_json, conn):
     id = request_json["id"]
 
@@ -53,7 +59,9 @@ def get_dog(request_json, conn):
         "type": "object",
         "properties": {
             "user_email": {"type": "string"}
-        }
+        },
+        "additionalProperties": False,
+        "minProperties": 1,
     },
     out_schema={
         "type": "array",
@@ -65,16 +73,20 @@ def get_dog(request_json, conn):
                 "dog_breed": {"type": "string"},
                 "submission_time": {"type": "string"},
                 "dog_weight": {
-                    "type": "object", "properties": {
+                    "type": "object",
+                    "properties": {
                         "id": {"type": "number"},
                         "lower": {"type": "number"},
                         "upper": {"type": "number"}
-                    }
+                    },
+                    "additionalProperties": False,
+                    "minProperties": 3,
                 }
             }
-        }
-    }
-)
+        },
+        "additionalProperties": False,
+        "minProperties": 5,
+    })
 def get_submissions(request_json, conn):
     submitter_email = request_json["user_email"]
 
@@ -114,12 +126,13 @@ def get_submissions(request_json, conn):
             "dog_breed": {"type": "string"},
             "dog_weight": {"type": "integer"},
             "user_email": {"type": "string"}
-        }
+        },
+        "additionalProperties": False,
+        "minProperties": 5,
     },
     out_schema={
         "type": "number"
-    }
-)
+    })
 def submit_dog(request_json, conn):
     with conn.cursor() as cursor:
         cursor.execute(
@@ -137,25 +150,25 @@ def submit_dog(request_json, conn):
     return id
 
 
-@cloudfunction(input_json=False)
-def get_dog_pair(conn):
-    with conn.cursor() as cursor:
-        cursor.execute("""SELECT id FROM dogs ORDER BY RANDOM()""")
-        ids = [cursor.fetchone()[0] for i in range(2)]
-    out = {
-        "dog1": ids[0],
-        "dog2": ids[1]
-    }
-
-    out_schema = {
+@cloudfunction(
+    input_json=False,
+    out_schema={
         "type": "object",
         "properties": {
             "dog1": {"type": "integer"},
             "dog2": {"type": "integer"}
-        }
+        },
+        "additionalProperties": False,
+        "minProperties": 2,
+    })
+def get_dog_pair(conn):
+    with conn.cursor() as cursor:
+        cursor.execute("""SELECT id FROM dogs ORDER BY RANDOM()""")
+        ids = [cursor.fetchone()[0] for i in range(2)]
+    return {
+        "dog1": ids[0],
+        "dog2": ids[1]
     }
-    validate(out, out_schema)
-    return out
 
 
 @cloudfunction(
@@ -165,9 +178,20 @@ def get_dog_pair(conn):
             "dog1_id": {"type": "integer"},
             "dog2_id": {"type": "integer"},
             "winner": {"type": "integer"},
-        }
+            "voter_uuid": {"type": "string"},
+        },
+        "additionalProperties": False,
+        "minProperties": 4,
     },
-)
+    out_schema={
+        "type": "object",
+        "properties": {
+            "dog1": {"type": "integer"},
+            "dog2": {"type": "integer"}
+        },
+        "additionalProperties": False,
+        "minProperties": 2,
+    })
 def submit_vote(request_json, conn):
     id1 = request_json["dog1_id"]
     id2 = request_json["dog2_id"]
@@ -184,13 +208,54 @@ def submit_vote(request_json, conn):
         cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result) VALUES (%s, %s, %s)""",
                        (id1, id2, result[winner]))
 
+    # TODO: Call _dog_pair
+
+
+'''
+1. Gender identity          =>   Masculine, Feminine, Other: Fill in blank
+2. Age                      =>   Integer (years)
+3. Education                =>   No high school, Some high school, Completed high school, Some college, Completed College, In advanced degree, Completed advanced degree
+4. Location                 =>   State drop down or other: fill in blank
+5. Dog Ownership            =>   Boolean
+6. Northeastern Affiliation => No, Current Student, Alum, Faculty, Staff, Other: Fill in blank
+'''
+
+
+@cloudfunction(
+    in_schema={
+        "type": "object",
+        "properties": {
+            "gender_identity": {"type": "string"},
+            "age": {"type": "integer"},
+            "education": {"type": "integer"},
+            "location": {"type": "string"},
+            "dog_ownership": {"type": "boolean"},
+            "northeatern_relationship": {"type": "string"},
+        },
+        "additionalProperties": False,
+        "minProperties": 6,
+    },
+    out_schema={
+        "type": "object",
+        "properties": {
+            "dog1": {"type": "integer"},
+            "dog2": {"type": "integer"}
+        },
+        "additionalProperties": False,
+        "minProperties": 2,
+    })
+def register_voter(request_json, conn):
+    pass
+
 
 @cloudfunction(
     in_schema={
         "type": "object",
         "properties": {
             "id": {"type": "integer"}
-        }
+        },
+        "additionalProperties": False,
+        "minProperties": 1,
     },
     out_schema={
         "type": "object",
@@ -202,12 +267,13 @@ def submit_vote(request_json, conn):
                     "wins": {"type": "number"},
                     "losses": {"type": "number"},
                     "ties": {"type": "number"}
-                }
+                },
+                "additionalProperties": False,
+                "minProperties": 3,
             }
         },
-        "additionalProperties": False
-    }
-)
+        "additionalProperties": False,
+    })
 def get_votes(request_json, conn):
     dog_id = request_json["id"]
     with conn.cursor() as cursor:
