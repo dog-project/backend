@@ -27,7 +27,7 @@ def cloudfunction(input_json=True, in_schema = None, out_schema=None):
         :return: a function that accepts one argument, a Flask request, and calls f with the modifications listed
         """
         @functools.wraps(f)
-        def with_cors_header(request):
+        def wrapped(request):
             global pg_pool
 
             # If given an OPTIONS request, tell the requester that we allow all CORS requests (pre-flight stage)
@@ -79,7 +79,7 @@ def cloudfunction(input_json=True, in_schema = None, out_schema=None):
                 print("Error: Exception traceback: " + repr(traceback.format_exc()))
                 return (traceback.format_exc(), 500, headers)
 
-        return with_cors_header
+        return wrapped
 
     return cloudfunction_decorator
 

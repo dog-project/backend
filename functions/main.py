@@ -1,3 +1,5 @@
+import uuid
+
 from util.cloudfunction import cloudfunction
 from jsonschema import validate
 
@@ -151,20 +153,43 @@ def submit_dog(request_json, conn):
 
 
 @cloudfunction(
-    input_json=False,
+    in_schema={"type": "string"},
     out_schema={
-        "type": "object",
-        "properties": {
-            "dog1": {"type": "integer"},
-            "dog2": {"type": "integer"}
-        },
-        "additionalProperties": False,
-        "minProperties": 2,
+        "anyOf": [{
+            "type": "object",
+            "properties": {
+                "dog1": {"type": "integer"},
+                "dog2": {"type": "integer"}
+            },
+            "additionalProperties": False,
+            "minProperties": 2,
+        }, {
+            "type": "null"
+        }]
     })
-def get_dog_pair(conn):
+def get_dog_pair(request_json, conn):
+    return _get_dog_pair(request_json, conn)
+
+
+def _get_dog_pair(voter_uuid, conn):
     with conn.cursor() as cursor:
-        cursor.execute("""SELECT id FROM dogs ORDER BY RANDOM()""")
-        ids = [cursor.fetchone()[0] for i in range(2)]
+        cursor.execute("""
+        WITH dogs1 AS (SELECT dogs.id AS dog1 FROM dogs),
+             dogs2 AS (SELECT dogs.id AS dog2 FROM dogs),
+             dog_pairs AS (SELECT * FROM dogs1 CROSS JOIN dogs2 WHERE dog1 != dog2),
+             seen_pairs AS (
+              SELECT dog1_id, dog2_id AS dog FROM votes JOIN voters ON (voter_id = voters.id) WHERE voters.uuid = %(vid)s
+              UNION ALL 
+              SELECT dog2_id, dog1_id AS dog FROM votes JOIN voters ON (voter_id = voters.id) WHERE voters.uuid = %(vid)s
+             )
+        
+        SELECT dog1, dog2 FROM dog_pairs
+        WHERE (dog1, dog2) NOT IN (SELECT * FROM seen_pairs)
+          AND (dog2, dog1) NOT IN (SELECT * FROM seen_pairs)
+        ORDER BY RANDOM()
+        LIMIT 1
+        """, {"vid": voter_uuid})
+        ids = cursor.fetchone()
     return {
         "dog1": ids[0],
         "dog2": ids[1]
@@ -184,18 +209,23 @@ def get_dog_pair(conn):
         "minProperties": 4,
     },
     out_schema={
-        "type": "object",
-        "properties": {
-            "dog1": {"type": "integer"},
-            "dog2": {"type": "integer"}
-        },
-        "additionalProperties": False,
-        "minProperties": 2,
+        "anyOf": [{
+            "type": "object",
+            "properties": {
+                "dog1": {"type": "integer"},
+                "dog2": {"type": "integer"}
+            },
+            "additionalProperties": False,
+            "minProperties": 2,
+        }, {
+            "type": "null"
+        }]
     })
 def submit_vote(request_json, conn):
     id1 = request_json["dog1_id"]
     id2 = request_json["dog2_id"]
     winner = request_json["winner"]
+    voter_uuid = request_json["voter_uuid"]
 
     # A mapping from `winner` to results in the vote.
     result = {
@@ -208,17 +238,7 @@ def submit_vote(request_json, conn):
         cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result) VALUES (%s, %s, %s)""",
                        (id1, id2, result[winner]))
 
-    # TODO: Call _dog_pair
-
-
-'''
-1. Gender identity          =>   Masculine, Feminine, Other: Fill in blank
-2. Age                      =>   Integer (years)
-3. Education                =>   No high school, Some high school, Completed high school, Some college, Completed College, In advanced degree, Completed advanced degree
-4. Location                 =>   State drop down or other: fill in blank
-5. Dog Ownership            =>   Boolean
-6. Northeastern Affiliation => No, Current Student, Alum, Faculty, Staff, Other: Fill in blank
-'''
+    return _get_dog_pair(voter_uuid, conn)
 
 
 @cloudfunction(
@@ -230,22 +250,55 @@ def submit_vote(request_json, conn):
             "education": {"type": "integer"},
             "location": {"type": "string"},
             "dog_ownership": {"type": "boolean"},
-            "northeatern_relationship": {"type": "string"},
+            "northeastern_relationship": {"type": "string"},
         },
         "additionalProperties": False,
         "minProperties": 6,
     },
     out_schema={
-        "type": "object",
-        "properties": {
-            "dog1": {"type": "integer"},
-            "dog2": {"type": "integer"}
-        },
-        "additionalProperties": False,
-        "minProperties": 2,
+        "anyOf": [{
+            "type": "object",
+            "properties": {
+                "dog1": {"type": "integer"},
+                "dog2": {"type": "integer"},
+                "voter_uuid": {"type": "string"},
+            },
+            "additionalProperties": False,
+            "minProperties": 2,
+        }, {
+            "type": "null"
+        }]
     })
 def register_voter(request_json, conn):
-    pass
+    education_levels = ['Some high school',
+                        'High school diploma or equivalent',
+                        'Vocational training',
+                        'Some college',
+                        'Associate''s degree',
+                        'Bachelor''s degree',
+                        'Post-undergraduate education']
+
+    voter_uuid = str(uuid.uuid4())
+    request_json["uuid"] = voter_uuid
+    request_json["northeastern_affiliation"] = request_json["northeastern_relationship"]
+    request_json["education"] = education_levels[request_json["education"]]
+    del request_json["northeastern_relationship"]
+
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """INSERT INTO voters (uuid, gender_identity, age, 
+            education, location, dog_ownership, northeastern_affiliation) 
+            VALUES (%(uuid)s, 
+            %(gender_identity)s, 
+            %(age)s, 
+            %(education)s, 
+            %(location)s, 
+            %(dog_ownership)s, 
+            %(northeastern_affiliation)s
+            )""",
+            request_json)
+
+    return {**_get_dog_pair(voter_uuid, conn), "voter_uuid": voter_uuid}
 
 
 @cloudfunction(

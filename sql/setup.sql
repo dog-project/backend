@@ -29,14 +29,38 @@ CREATE TABLE dogs
 );
 
 
-CREATE TYPE vote_result AS ENUM ('win', 'loss', 'tie');
+CREATE TYPE education_level AS ENUM (
+  'Some high school',
+  'High school diploma or equivalent',
+  'Vocational training',
+  'Some college',
+  'Associate''s degree',
+  'Bachelor''s degree',
+  'Post-undergraduate education'
+  );
+
+CREATE TABLE voters
+(
+  id                       SERIAL PRIMARY KEY,
+  uuid                     UUID      NOT NULL,
+  creation_time            TIMESTAMP NOT NULL DEFAULT now(),
+  gender_identity          VARCHAR(300),
+  age                      INTEGER,
+  education                education_level,
+  location                 VARCHAR(300),
+  dog_ownership            BOOLEAN,
+  northeastern_affiliation VARCHAR(300)
+);
+
+CREATE TYPE VOTE_RESULT AS ENUM ('win', 'loss', 'tie');
 
 -- result is the result of dog1 against dog2, as in, a win means dog1 beat dog2.
-CREATE TABLE votes (
-  vote_id         SERIAL PRIMARY KEY,
+CREATE TABLE votes
+(
+  id              SERIAL PRIMARY KEY,
   submission_time TIMESTAMP NOT NULL DEFAULT NOW(),
-
+  voter_id        INTEGER REFERENCES voters (id),
   dog1_id         INTEGER REFERENCES dogs (id),
   dog2_id         INTEGER REFERENCES dogs (id),
-  result          vote_result
-)
+  result          VOTE_RESULT
+);

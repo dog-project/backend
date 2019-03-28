@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from main import submit_dog, get_dog_pair, submit_vote, get_votes
+from main import submit_dog, get_dog_pair, submit_vote, get_votes, register_voter
 
 
 def mock_request(data):
@@ -29,15 +29,26 @@ def test_get_dog_pair():
     #         request = mock_request(data)
     #         submit_dog(request)
 
-    result = json.loads(get_dog_pair(mock_request(None))[0])
+    voter_data = {
+            "gender_identity": "masculine",
+            "age": 20,
+            "education": 0,
+            "location": "CA",
+            "dog_ownership": False,
+            "northeastern_relationship": "staff",
+        }
+
+    result = json.loads(register_voter(mock_request(voter_data))[0])
     id1 = result["dog1"]
     id2 = result["dog2"]
+    voter_uuid = result["voter_uuid"]
     assert id1 != id2
 
     voteFor1 = {
         "dog1_id": id1,
         "dog2_id": id2,
-        "winner": id1
+        "winner": id1,
+        "voter_uuid": voter_uuid,
     }
 
     def get_votes_dog1(id1, id2):
@@ -52,7 +63,7 @@ def test_get_dog_pair():
     assert vote_count_after["losses"] == vote_count["losses"]
     assert vote_count_after["ties"] == vote_count["ties"]
 
-    result = json.loads(get_dog_pair(mock_request(None))[0])
+    result = json.loads(get_dog_pair(mock_request(voter_uuid))[0])
     id1 = result["dog1"]
     id2 = result["dog2"]
     assert id1 != id2
@@ -60,7 +71,8 @@ def test_get_dog_pair():
     tie_vote = {
         "dog1_id": id1,
         "dog2_id": id2,
-        "winner": -1
+        "winner": -1,
+        "voter_uuid": voter_uuid,
     }
 
     vote_count = get_votes_dog1(id1, id2)
