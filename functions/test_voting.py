@@ -30,12 +30,12 @@ def test_get_dog_pair():
     #         submit_dog(request)
 
     voter_data = {
-            "gender_identity": "masculine",
+            "gender_identity": "test",
             "age": 20,
             "education": 0,
-            "location": "CA",
+            "location": "test",
             "dog_ownership": False,
-            "northeastern_relationship": "staff",
+            "northeastern_relationship": "test",
         }
 
     result = json.loads(register_voter(mock_request(voter_data))[0])

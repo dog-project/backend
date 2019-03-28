@@ -270,7 +270,8 @@ def submit_vote(request_json, conn):
         }]
     })
 def register_voter(request_json, conn):
-    education_levels = ['Some high school',
+    education_levels = ['No high school',
+                        'Some high school',
                         'High school diploma or equivalent',
                         'Vocational training',
                         'Some college',
