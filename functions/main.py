@@ -245,12 +245,12 @@ def submit_vote(request_json, conn):
     in_schema={
         "type": "object",
         "properties": {
-            "gender_identity": {"type": "string"},
-            "age": {"type": "integer"},
-            "education": {"type": "integer"},
-            "location": {"type": "string"},
-            "dog_ownership": {"type": "boolean"},
-            "northeastern_relationship": {"type": "string"},
+            "gender_identity": {"type": ["string", "null"]},
+            "age": {"type": ["integer", "null"]},
+            "education": {"type": ["integer", "null"]},
+            "location": {"type": ["string", "null"]},
+            "dog_ownership": {"type": ["boolean", "null"]},
+            "northeastern_relationship": {"type": ["string", "null"]},
         },
         "additionalProperties": False,
         "minProperties": 6,
