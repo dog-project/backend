@@ -76,6 +76,12 @@ def cloudfunction(input_json=True, in_schema = None, out_schema=None):
                 response_json = json.dumps(function_output)
                 return (response_json, 200, headers)
             except:
+                # Make sure to put the connection back in the pool, even if there has been an exception
+                try:
+                    # But conn may not be defined, so wrap this call in a try/except block
+                    pg_pool.putconn(conn)
+                except:
+                    pass
                 print("Error: Exception traceback: " + repr(traceback.format_exc()))
                 return (traceback.format_exc(), 500, headers)
 

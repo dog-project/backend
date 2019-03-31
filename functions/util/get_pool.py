@@ -17,15 +17,15 @@ pg_config = {
 
 def get_pool():
     try:
-        return __connect(f'/cloudsql/{INSTANCE_CONNECTION_NAME}', 5)
+        return __connect(f'/cloudsql/{INSTANCE_CONNECTION_NAME}')
     except OperationalError:
         # If production settings fail, use local development ones
-        return __connect('localhost', 3)
+        return __connect('localhost')
 
 
-def __connect(host, max_connections):
+def __connect(host):
     """
     Helper functions to connect to Postgres
     """
     pg_config['host'] = host
-    return SimpleConnectionPool(1, max_connections, **pg_config)
+    return SimpleConnectionPool(1, 1, **pg_config)

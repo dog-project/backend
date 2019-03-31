@@ -275,8 +275,8 @@ def register_voter(request_json, conn):
                         'High school diploma or equivalent',
                         'Vocational training',
                         'Some college',
-                        'Associate\'\'s degree',
-                        'Bachelor\'\'s degree',
+                        'Associate\'s degree',
+                        'Bachelor\'s degree',
                         'Post-undergraduate education']
 
     voter_uuid = str(uuid.uuid4())
