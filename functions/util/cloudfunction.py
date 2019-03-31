@@ -58,9 +58,9 @@ def cloudfunction(input_json=True, in_schema = None, out_schema=None):
                 if input_json:
                     request_json = request.get_json()
                     if in_schema:
+                        print(repr({"request_json": request_json}))
                         validate(request_json, in_schema)
 
-                    print(repr({"request_json": request_json}))
                     function_output = f(request_json, conn)
                 else:
                     function_output = f(conn)

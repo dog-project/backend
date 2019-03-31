@@ -6,4 +6,4 @@
 ./deploy.sh get_dog_pair &
 ./deploy.sh submit_vote &
 ./deploy.sh register_voter &
-./deploy.sh get_votes & 
+./deploy.sh get_votes &
