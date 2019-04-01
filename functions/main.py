@@ -282,7 +282,8 @@ def register_voter(request_json, conn):
     voter_uuid = str(uuid.uuid4())
     request_json["uuid"] = voter_uuid
     request_json["northeastern_affiliation"] = request_json["northeastern_relationship"]
-    request_json["education"] = education_levels[request_json["education"]]
+    if request_json["education"] != None:
+        request_json["education"] = education_levels[request_json["education"]]
     del request_json["northeastern_relationship"]
 
     with conn.cursor() as cursor:
