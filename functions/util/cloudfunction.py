@@ -64,6 +64,7 @@ def cloudfunction(input_json=True, in_schema=None, out_schema=None):
                 print(repr({"response_json": function_output}))
 
                 response_json = json.dumps(function_output)
+                # TODO allow functions to specify return codes in non-exceptional cases
                 return (response_json, 200, headers)
             except:
                 print("Error: Exception traceback: " + repr(traceback.format_exc()))

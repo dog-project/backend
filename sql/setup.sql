@@ -1,3 +1,8 @@
+-- TODO add logical deletion to dogs/voters. Lack of logical deletion required real deletion
+--      for running the first iteration of the dog project, which lead to problems as the
+--      emails of submitters were lost. Either have a table of "allowed dogs" which is cross-
+--      referenced in the vote selection (maybe with a view of only eligible dogs), or similar
+
 CREATE TABLE weights
 (
   id    INTEGER PRIMARY KEY,

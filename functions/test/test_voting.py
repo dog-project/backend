@@ -1,63 +1,83 @@
-from hypothesis import given, HealthCheck, settings, example, strategies as st
-from hypothesis_jsonschema import from_schema
+import pytest
 
 from main import _register_voter, _submit_vote, _get_votes
 
 from util.get_pool import get_connection
 
 
-@settings(suppress_health_check=HealthCheck.all())
-@example({
-    "gender_identity": "masculine",
-    "age": 20,
-    "education": 0,
-    "location": "china",
-    "dog_ownership": False,
-    "northeastern_relationship": "full-time student",
-})
-@given(from_schema({
-    "type": "object",
-    "properties": {
-        "gender_identity": {"oneOf": [{"type": "string"}, {"type": "null"}]},
-        "age": {"oneOf": [{"type": "integer", "minimum": 0, "maximum": 2147483647}, {"type": "null"}]},
-        "education": {"oneOf": [{"type": "integer", "minimum": 0, "maximum": 7}, {"type": "null"}]},
-        "location": {"oneOf": [{"type": "string"}, {"type": "null"}]},
-        "dog_ownership": {"oneOf": [{"type": "boolean"}, {"type": "null"}]},
-        "northeastern_relationship": {"oneOf": [{"type": "string"}, {"type": "null"}]},
-    },
-    "required": [
-        "gender_identity",
-        "age",
-        "education",
-        "location",
-        "dog_ownership",
-        "northeastern_relationship",
-    ]
-}))
-def test_register_voting_schema(s):
+def test_voting():
+    voter = {
+        "gender_identity": None,
+        "age": None,
+        "education": None,
+        "location": None,
+        "dog_ownership": None,
+        "northeastern_relationship": None,
+    }
+
     with get_connection() as conn:
-        _register_voter(s, conn)
+        register_result = _register_voter(voter, conn)
+        uuid = register_result["voter_uuid"]
+
+        # Voting for dog1
+        dog1 = register_result["dog1"]
+        dog2 = register_result["dog2"]
+        votes1_before = _get_votes({"id": dog1}, conn)
+        votes2_before = _get_votes({"id": dog2}, conn)
+
+        result = _submit_vote({"voter_uuid": uuid, "dog1_id": dog1, "dog2_id": dog2, "winner": dog1}, conn)
+
+        votes1_after = _get_votes({"id": dog1}, conn)
+        votes2_after = _get_votes({"id": dog2}, conn)
+
+        # dog1 has one additional win against dog2
+        # dog2 has one additional loss against dog1
+        assert votes1_before.get(str(dog2), {}).get("wins", 0) + 1 == votes1_after[str(dog2)]["wins"]
+        assert votes2_before.get(str(dog1), {}).get("losses", 0) + 1 == votes2_after[str(dog1)]["losses"]\
+
+        # Voting for dog2
+        dog1 = result["dog1"]
+        dog2 = result["dog2"]
+        votes1_before = _get_votes({"id": dog1}, conn)
+        votes2_before = _get_votes({"id": dog2}, conn)
+
+        result = _submit_vote({"voter_uuid": uuid, "dog1_id": dog1, "dog2_id": dog2, "winner": dog2}, conn)
+
+        votes1_after = _get_votes({"id": dog1}, conn)
+        votes2_after = _get_votes({"id": dog2}, conn)
+
+        # dog1 has one additional win against dog2
+        # dog2 has one additional loss against dog1
+        assert votes1_before.get(str(dog2), {}).get("losses", 0) + 1 == votes1_after[str(dog2)]["losses"]
+        assert votes2_before.get(str(dog1), {}).get("wins", 0) + 1 == votes2_after[str(dog1)]["wins"]
 
 
-@settings(suppress_health_check=HealthCheck.all())
-@given(from_schema({
-    "type": "object",
-    "properties": {
-        "dog1_id": {"type": "integer", "minimum": 0},
-        "dog2_id": {"type": "integer", "minimum": 0},
-        "winner": {"type": "integer"},
-        "voter_uuid": {"type": "string"},
-    },
-    "required": [
-        "gender_identity",
-        "age",
-        "education",
-        "location",
-        "dog_ownership",
-        "northeastern_relationship",
-    ]
-}))
-def test_voting(s):
+        # Tie
+        dog1 = result["dog1"]
+        dog2 = result["dog2"]
+        votes1_before = _get_votes({"id": dog1}, conn)
+        votes2_before = _get_votes({"id": dog2}, conn)
+
+        result = _submit_vote({"voter_uuid": uuid, "dog1_id": dog1, "dog2_id": dog2, "winner": -1}, conn)
+
+        votes1_after = _get_votes({"id": dog1}, conn)
+        votes2_after = _get_votes({"id": dog2}, conn)
+
+        # dog1 has one additional win against dog2
+        # dog2 has one additional loss against dog1
+        assert votes1_before.get(str(dog2), {}).get("losses", 0) == votes1_after[str(dog2)]["losses"]
+        assert votes1_before.get(str(dog2), {}).get("wins", 0) == votes1_after[str(dog2)]["wins"]
+        assert votes1_before.get(str(dog2), {}).get("ties", 0) + 1 == votes1_after[str(dog2)]["ties"]
+
+        assert votes2_before.get(str(dog1), {}).get("losses", 0) == votes2_after[str(dog1)]["losses"]
+        assert votes2_before.get(str(dog1), {}).get("wins", 0) == votes2_after[str(dog1)]["wins"]
+        assert votes2_before.get(str(dog1), {}).get("ties", 0) + 1 == votes2_after[str(dog1)]["ties"]
+
+
+
+
+@pytest.mark.slow
+def test_vote_duplicate():
     voter = {
         "gender_identity": "masculine",
         "age": 20,
@@ -68,22 +88,20 @@ def test_voting(s):
     }
 
     with get_connection() as conn:
+        seen_pairs = set()
+        num_votes = 0
+
         register_result = _register_voter(voter, conn)
         uuid = register_result["voter_uuid"]
         dog1 = register_result["dog1"]
         dog2 = register_result["dog2"]
 
-        votes1_before = _get_votes({"id": dog1}, conn)
-        votes2_before = _get_votes({"id": dog2}, conn)
+        while num_votes < 1000:
+            seen_pairs.add((dog1, dog2))
+            num_votes += 1
 
-        _submit_vote({"voter_uuid": uuid, "dog1_id": dog1, "dog2_id": dog2, "winner": dog1}, conn)
+            result = _submit_vote({"voter_uuid": uuid, "dog1_id": dog1, "dog2_id": dog2, "winner": dog1}, conn)
+            dog1 = result["dog1"]
+            dog2 = result["dog2"]
 
-        votes1_after = _get_votes({"id": dog1}, conn)
-        votes2_after = _get_votes({"id": dog2}, conn)
-
-        print(votes1_before, votes1_after)
-
-        assert votes1_before.get(str(dog2), {}).get("wins", 0) + 1 == votes1_after[str(dog2)]["wins"]
-        del votes1_before[dog2]
-        del votes1_after[dog2]
-        assert votes1_before == votes2_after
+        assert num_votes == len(seen_pairs)

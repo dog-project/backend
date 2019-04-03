@@ -1,7 +1,6 @@
 import uuid
-
 import psycopg2
-from psycopg2.extras import DictCursor, RealDictCursor
+from psycopg2.extras import RealDictCursor
 
 from util.cloudfunction import cloudfunction
 
@@ -255,8 +254,10 @@ def _submit_vote(data, conn):
     }
 
     with conn.cursor() as cursor:
-        cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result) VALUES (%s, %s, %s)""",
-                       (id1, id2, result[winner]))
+        cursor.execute("""SELECT id FROM voters WHERE uuid = %s""", (voter_uuid,))
+        voter_id = cursor.fetchone()[0]
+        cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result, voter_id) VALUES (%s, %s, %s, %s)""",
+                       (id1, id2, result[winner], voter_id))
 
     return _get_dog_pair(voter_uuid, conn)
 
