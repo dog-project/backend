@@ -1,5 +1,5 @@
 from os import getenv
-from psycopg2 import OperationalError
+from psycopg2 import OperationalError, connect
 from psycopg2.pool import SimpleConnectionPool
 
 INSTANCE_CONNECTION_NAME = getenv('INSTANCE_CONNECTION_NAME', "")
@@ -29,3 +29,7 @@ def __connect(host):
     """
     pg_config['host'] = host
     return SimpleConnectionPool(1, 1, **pg_config)
+
+def get_connection(host="localhost"):
+    pg_config["host"] = host
+    return connect(**pg_config)

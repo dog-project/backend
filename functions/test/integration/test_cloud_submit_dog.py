@@ -1,11 +1,15 @@
 import base64
-import datetime
+import json
+from unittest.mock import Mock
 
-from main import _submit_dog
-from main import _get_dog
+from main import submit_dog
+from main import get_dog
 
 from util.get_pool import get_pool
 
+
+def mock_request(data):
+    return Mock(get_json=Mock(return_value=data), args=data)
 
 def test_submit_dog_happy_path():
     pool = get_pool()
@@ -21,10 +25,10 @@ def test_submit_dog_happy_path():
             "dog_weight": 0
         }
 
-        r = _submit_dog(data, conn)
+        r = json.loads(submit_dog(mock_request(data))[0])
         dog_id = r
 
-        dog_data = _get_dog({"id": dog_id}, conn)
+        dog_data = json.loads(get_dog(mock_request({"id": dog_id}))[0])
         assert dog_data["image"] == image_data, 'UTF-8'
         assert dog_data["dog_age"] == 12
         assert dog_data["dog_breed"] == "mutt"

@@ -1,8 +1,10 @@
 import uuid
 
+import psycopg2
 from psycopg2.extras import DictCursor, RealDictCursor
 
 from util.cloudfunction import cloudfunction
+
 
 @cloudfunction(
     in_schema={
@@ -17,7 +19,7 @@ from util.cloudfunction import cloudfunction
         "type": "object",
         "properties": {
             "image": {"type": "string"},
-            "dog_age": {"type": "integer", "minimum": 0},
+            "dog_age": {"type": "integer", "minimum": 0, "maximum": 2147483647},
             "dog_breed": {"type": "string"},
             "dog_weight": {
                 "type": "object",
@@ -118,7 +120,7 @@ def get_dog_pair(request_json, conn):
 
 
 def _get_dog_pair(voter_uuid, conn):
-    with conn.cursor() as cursor:
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute("""
         WITH dogs1 AS (SELECT dogs.id AS dog1 FROM dogs),
              dogs2 AS (SELECT dogs.id AS dog2 FROM dogs),
@@ -135,72 +137,22 @@ def _get_dog_pair(voter_uuid, conn):
         ORDER BY RANDOM()
         LIMIT 1
         """, {"vid": voter_uuid})
-        ids = cursor.fetchone()
-    return {
-        "dog1": ids[0],
-        "dog2": ids[1]
-    }
+        try:
+            return cursor.fetchone()
+        except psycopg2.ProgrammingError:
+            return None
 
 
 @cloudfunction(
     in_schema={
         "type": "object",
         "properties": {
-            "dog1_id": {"type": "integer", "minimum": 0},
-            "dog2_id": {"type": "integer", "minimum": 0},
-            "winner": {"type": "integer"},
-            "voter_uuid": {"type": "string"},
-        },
-        "additionalProperties": False,
-        "minProperties": 4,
-    },
-    out_schema={
-        "anyOf": [{
-            "type": "object",
-            "properties": {
-                "dog1": {"type": "integer", "minumum": 0},
-                "dog2": {"type": "integer", "minumum": 0}
-            },
-            "additionalProperties": False,
-            "minProperties": 2,
-        }, {
-            "type": "null"
-        }]
-    })
-def submit_vote(request_json, conn):
-    return _submit_vote(request_json, conn)
-
-
-def _submit_vote(data, conn):
-    id1 = data["dog1_id"]
-    id2 = data["dog2_id"]
-    winner = data["winner"]
-    voter_uuid = data["voter_uuid"]
-
-    # A mapping from `winner` to results in the vote.
-    result = {
-        -1: "tie",
-        id1: "win",
-        id2: "loss"
-    }
-
-    with conn.cursor() as cursor:
-        cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result) VALUES (%s, %s, %s)""",
-                       (id1, id2, result[winner]))
-
-    return _get_dog_pair(voter_uuid, conn)
-
-
-@cloudfunction(
-    in_schema={
-        "type": "object",
-        "properties": {
-            "gender_identity": {"type": ["string", "null"]},
-            "age": {"type": ["integer", "null"]},
-            "education": {"type": ["integer", "null"]},
-            "location": {"type": ["string", "null"]},
-            "dog_ownership": {"type": ["boolean", "null"]},
-            "northeastern_relationship": {"type": ["string", "null"]},
+            "gender_identity": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+            "age": {"oneOf": [{"type": "integer"}, {"type": "null"}]},
+            "education": {"oneOf": [{"type": "integer", "minimum": 0, "maximum": 7}, {"type": "null"}]},
+            "location": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+            "dog_ownership": {"oneOf": [{"type": "boolean"}, {"type": "null"}]},
+            "northeastern_relationship": {"oneOf": [{"type": "string"}, {"type": "null"}]},
         },
         "additionalProperties": False,
         "minProperties": 6,
@@ -258,6 +210,55 @@ def _register_voter(data, conn):
             data)
 
     return {**_get_dog_pair(voter_uuid, conn), "voter_uuid": voter_uuid}
+
+
+@cloudfunction(
+    in_schema={
+        "type": "object",
+        "properties": {
+            "dog1_id": {"type": "integer", "minimum": 0},
+            "dog2_id": {"type": "integer", "minimum": 0},
+            "winner": {"type": "integer"},
+            "voter_uuid": {"type": "string"},
+        },
+        "additionalProperties": False,
+        "minProperties": 4,
+    },
+    out_schema={
+        "anyOf": [{
+            "type": "object",
+            "properties": {
+                "dog1": {"type": "integer", "minumum": 0},
+                "dog2": {"type": "integer", "minumum": 0}
+            },
+            "additionalProperties": False,
+            "minProperties": 2,
+        }, {
+            "type": "null"
+        }]
+    })
+def submit_vote(request_json, conn):
+    return _submit_vote(request_json, conn)
+
+
+def _submit_vote(data, conn):
+    id1 = data["dog1_id"]
+    id2 = data["dog2_id"]
+    winner = data["winner"]
+    voter_uuid = data["voter_uuid"]
+
+    # A mapping from `winner` to results in the vote.
+    result = {
+        -1: "tie",
+        id1: "win",
+        id2: "loss"
+    }
+
+    with conn.cursor() as cursor:
+        cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result) VALUES (%s, %s, %s)""",
+                       (id1, id2, result[winner]))
+
+    return _get_dog_pair(voter_uuid, conn)
 
 
 @cloudfunction(

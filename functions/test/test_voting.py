@@ -1,81 +1,89 @@
-import json
-from unittest.mock import Mock
+from hypothesis import given, HealthCheck, settings, example, strategies as st
+from hypothesis_jsonschema import from_schema
+
+from main import _register_voter, _submit_vote, _get_votes
+
+from util.get_pool import get_connection
 
 
-from main import get_dog_pair, submit_vote, get_votes, register_voter
+@settings(suppress_health_check=HealthCheck.all())
+@example({
+    "gender_identity": "masculine",
+    "age": 20,
+    "education": 0,
+    "location": "china",
+    "dog_ownership": False,
+    "northeastern_relationship": "full-time student",
+})
+@given(from_schema({
+    "type": "object",
+    "properties": {
+        "gender_identity": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+        "age": {"oneOf": [{"type": "integer", "minimum": 0, "maximum": 2147483647}, {"type": "null"}]},
+        "education": {"oneOf": [{"type": "integer", "minimum": 0, "maximum": 7}, {"type": "null"}]},
+        "location": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+        "dog_ownership": {"oneOf": [{"type": "boolean"}, {"type": "null"}]},
+        "northeastern_relationship": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    },
+    "required": [
+        "gender_identity",
+        "age",
+        "education",
+        "location",
+        "dog_ownership",
+        "northeastern_relationship",
+    ]
+}))
+def test_register_voting_schema(s):
+    with get_connection() as conn:
+        _register_voter(s, conn)
 
 
-def mock_request(data):
-    return Mock(get_json=Mock(return_value=data), args=data)
-
-
-def test_get_dog_pair():
-    # if get_dog_pair(mock_request(None))[1] != 200:
-    #     # If it fails, try adding two dogs, in hopes that the error was a lack of dogs in the db
-    #     for i in range(2):
-    #         image_data = b"Thisisatestimage"
-    #         email = ''.join("test@example.com")
-    #
-    #         data = {
-    #             "image": image_data,
-    #             "dog_age": 12,
-    #             "dog_breed": "mutt",
-    #             "user_email": email,
-    #             "dog_weight": 3
-    #         }
-    #
-    #         request = mock_request(data)
-    #         submit_dog(request)
-
-    voter_data = {
-            "gender_identity": "test",
-            "age": 20,
-            "education": 0,
-            "location": "test",
-            "dog_ownership": False,
-            "northeastern_relationship": "test",
-        }
-
-    result = json.loads(register_voter(mock_request(voter_data))[0])
-    id1 = result["dog1"]
-    id2 = result["dog2"]
-    voter_uuid = result["voter_uuid"]
-    assert id1 != id2
-
-    voteFor1 = {
-        "dog1_id": id1,
-        "dog2_id": id2,
-        "winner": id1,
-        "voter_uuid": voter_uuid,
+@settings(suppress_health_check=HealthCheck.all())
+@given(from_schema({
+    "type": "object",
+    "properties": {
+        "dog1_id": {"type": "integer", "minimum": 0},
+        "dog2_id": {"type": "integer", "minimum": 0},
+        "winner": {"type": "integer"},
+        "voter_uuid": {"type": "string"},
+    },
+    "required": [
+        "gender_identity",
+        "age",
+        "education",
+        "location",
+        "dog_ownership",
+        "northeastern_relationship",
+    ]
+}))
+def test_voting(s):
+    voter = {
+        "gender_identity": "masculine",
+        "age": 20,
+        "education": 0,
+        "location": "china",
+        "dog_ownership": False,
+        "northeastern_relationship": "full-time student",
     }
 
-    def get_votes_dog1(id1, id2):
-        return json.loads(get_votes(mock_request({"id": id1}))[0]).get(str(id2), {"wins": 0, "losses": 0, "ties": 0})
+    with get_connection() as conn:
+        register_result = _register_voter(voter, conn)
+        uuid = register_result["voter_uuid"]
+        dog1 = register_result["dog1"]
+        dog2 = register_result["dog2"]
 
-    vote_count = get_votes_dog1(id1, id2)
-    submit_vote(mock_request(voteFor1))
+        votes1_before = _get_votes({"id": dog1}, conn)
+        votes2_before = _get_votes({"id": dog2}, conn)
 
-    vote_count_after = get_votes_dog1(id1, id2)
+        _submit_vote({"voter_uuid": uuid, "dog1_id": dog1, "dog2_id": dog2, "winner": dog1}, conn)
 
-    assert vote_count_after["wins"] == vote_count["wins"] + 1
-    assert vote_count_after["losses"] == vote_count["losses"]
-    assert vote_count_after["ties"] == vote_count["ties"]
+        votes1_after = _get_votes({"id": dog1}, conn)
+        votes2_after = _get_votes({"id": dog2}, conn)
 
-    result = json.loads(get_dog_pair(mock_request(voter_uuid))[0])
-    id1 = result["dog1"]
-    id2 = result["dog2"]
-    assert id1 != id2
+        print(votes1_before, votes1_after)
 
-    tie_vote = {
-        "dog1_id": id1,
-        "dog2_id": id2,
-        "winner": -1,
-        "voter_uuid": voter_uuid,
-    }
-
-    vote_count = get_votes_dog1(id1, id2)
-    submit_vote(mock_request(tie_vote))
-    vote_count_after = get_votes_dog1(id1, id2)
-    assert vote_count_after["wins"] == vote_count["wins"]
-    assert vote_count_after["losses"] == vote_count["losses"]
-    assert vote_count_after["ties"] == vote_count["ties"] + 1
+        assert votes1_before.get(str(dog2), {}).get("wins", 0) + 1 == votes1_after[str(dog2)]["wins"]
+        del votes1_before[dog2]
+        del votes1_after[dog2]
+        assert votes1_before == votes2_after
