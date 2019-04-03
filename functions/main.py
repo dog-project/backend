@@ -235,8 +235,10 @@ def submit_vote(request_json, conn):
     }
 
     with conn.cursor() as cursor:
-        cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result) VALUES (%s, %s, %s)""",
-                       (id1, id2, result[winner]))
+        cursor.execute('''SELECT id FROM voters WHERE uuid = %s''', (voter_uuid,))
+        numeric_voter_id = cursor.fetchone()[0]
+        cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result, voter_id) VALUES (%s, %s, %s, %s)""",
+                       (id1, id2, result[winner], numeric_voter_id))
 
     return _get_dog_pair(voter_uuid, conn)
 
