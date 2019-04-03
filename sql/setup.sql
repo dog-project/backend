@@ -30,6 +30,7 @@ CREATE TABLE dogs
 
 
 CREATE TYPE education_level AS ENUM (
+  'No high school'
   'Some high school',
   'High school diploma or equivalent',
   'Vocational training',
