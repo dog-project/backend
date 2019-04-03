@@ -1,8 +1,6 @@
 import base64
 import datetime
 import json
-import random
-import string
 from unittest.mock import Mock
 
 from main import submit_dog

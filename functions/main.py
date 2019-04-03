@@ -34,21 +34,24 @@ from jsonschema import validate
         "minProperties": 4,
     })
 def get_dog(request_json, conn):
+    return _get_dog(request_json, conn)
+
+def _get_dog(request_json, conn):
     id = request_json["id"]
 
     with conn.cursor() as cursor:
         cursor.execute("""
-        SELECT image, age_months, breed, weight_id
-          FROM dogs
-          WHERE id = %s""",
+            SELECT image, age_months, breed, weight_id
+              FROM dogs
+              WHERE id = %s""",
                        (id,))
         out = dict(zip(
             ("image", "dog_age", "dog_breed", "dog_weight"),
             cursor.fetchone()))
         cursor.execute("""
-                    SELECT id, lower, upper 
-                      FROM weights
-                      WHERE id = %s""", (out["dog_weight"],))
+                        SELECT id, lower, upper 
+                          FROM weights
+                          WHERE id = %s""", (out["dog_weight"],))
         out["dog_weight"] = dict(zip(("id", "lower", "upper"), cursor.fetchone()))
 
     # Convert from wacky in-memory format to byte-string, BYTEA
@@ -90,6 +93,9 @@ def get_dog(request_json, conn):
         "minProperties": 5,
     })
 def get_submissions(request_json, conn):
+    return _get_submissions(request_json, conn)
+
+def _get_submissions(request_json, conn):
     submitter_email = request_json["user_email"]
 
     with conn.cursor() as cursor:
@@ -222,6 +228,9 @@ def _get_dog_pair(voter_uuid, conn):
         }]
     })
 def submit_vote(request_json, conn):
+    return _submit_vote(request_json, conn)
+
+def _submit_vote(request_json, conn):
     id1 = request_json["dog1_id"]
     id2 = request_json["dog2_id"]
     winner = request_json["winner"]
@@ -270,6 +279,10 @@ def submit_vote(request_json, conn):
         }]
     })
 def register_voter(request_json, conn):
+    return _register_voter(request_json, conn)
+
+def _register_voter(request_json, conn):
+    # TODO read this dynamically from the database to ensure SPoT
     education_levels = ['No high school',
                         'Some high school',
                         'High school diploma or equivalent',
@@ -330,6 +343,9 @@ def register_voter(request_json, conn):
         "additionalProperties": False,
     })
 def get_votes(request_json, conn):
+    return _get_votes(request_json, conn)
+
+def _get_votes(request_json, conn):
     dog_id = request_json["id"]
     with conn.cursor() as cursor:
         select = """
