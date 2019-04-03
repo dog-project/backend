@@ -1,10 +1,8 @@
-import base64
 import json
 from unittest.mock import Mock
 
-import pytest
 
-from main import submit_dog, get_dog_pair, submit_vote, get_votes, register_voter
+from main import get_dog_pair, submit_vote, get_votes, register_voter
 
 
 def mock_request(data):

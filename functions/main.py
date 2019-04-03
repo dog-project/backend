@@ -1,8 +1,8 @@
 import uuid
 
-from util.cloudfunction import cloudfunction
-from jsonschema import validate
+from psycopg2.extras import DictCursor, RealDictCursor
 
+from util.cloudfunction import cloudfunction
 
 @cloudfunction(
     in_schema={
@@ -17,14 +17,14 @@ from jsonschema import validate
         "type": "object",
         "properties": {
             "image": {"type": "string"},
-            "dog_age": {"type": "number"},
+            "dog_age": {"type": "integer", "minimum": 0},
             "dog_breed": {"type": "string"},
             "dog_weight": {
                 "type": "object",
                 "properties": {
-                    "id": {"type": "number"},
-                    "lower": {"type": "number"},
-                    "upper": {"type": "number"}
+                    "id": {"type": "integer", "minimum": 0},
+                    "lower": {"type": "integer", "minimum": 0},
+                    "upper": {"type": "integer", "minimum": 0}
                 },
                 "additionalProperties": False,
                 "minProperties": 3,
@@ -36,25 +36,24 @@ from jsonschema import validate
 def get_dog(request_json, conn):
     return _get_dog(request_json, conn)
 
-def _get_dog(request_json, conn):
-    id = request_json["id"]
 
-    with conn.cursor() as cursor:
+def _get_dog(data, conn):
+    id = data["id"]
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute("""
-            SELECT image, age_months, breed, weight_id
+            SELECT image, age_months AS dog_age, breed AS dog_breed, weight_id as dog_weight
               FROM dogs
               WHERE id = %s""",
                        (id,))
-        out = dict(zip(
-            ("image", "dog_age", "dog_breed", "dog_weight"),
-            cursor.fetchone()))
+        out = cursor.fetchone()
         cursor.execute("""
                         SELECT id, lower, upper 
                           FROM weights
                           WHERE id = %s""", (out["dog_weight"],))
-        out["dog_weight"] = dict(zip(("id", "lower", "upper"), cursor.fetchone()))
+        out["dog_weight"] = cursor.fetchone()
 
-    # Convert from wacky in-memory format to byte-string, BYTEA
+    # Convert from wacky in-memory format (postgres BYTEA) to byte-string
     out['image'] = str(bytes(out['image']), 'UTF-8')
     return out
 
@@ -63,95 +62,36 @@ def _get_dog(request_json, conn):
     in_schema={
         "type": "object",
         "properties": {
-            "user_email": {"type": "string"}
-        },
-        "additionalProperties": False,
-        "minProperties": 1,
-    },
-    out_schema={
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                "image": {"type": "string"},
-                "dog_age": {"type": "number"},
-                "dog_breed": {"type": "string"},
-                "submission_time": {"type": "string"},
-                "dog_weight": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "number"},
-                        "lower": {"type": "number"},
-                        "upper": {"type": "number"}
-                    },
-                    "additionalProperties": False,
-                    "minProperties": 3,
-                }
-            }
-        },
-        "additionalProperties": False,
-        "minProperties": 5,
-    })
-def get_submissions(request_json, conn):
-    return _get_submissions(request_json, conn)
-
-def _get_submissions(request_json, conn):
-    submitter_email = request_json["user_email"]
-
-    with conn.cursor() as cursor:
-        cursor.execute("""
-        SELECT image, age_months, breed, weight_id, submission_time
-          FROM dogs
-          WHERE submitter_email = %s
-          ORDER BY id;""",
-                       (submitter_email,))
-        out = []
-        for row in cursor:
-            row_dict = dict(zip(
-                ("image", "dog_age", "dog_breed", "dog_weight", "submission_time"),
-                row))
-
-            with conn.cursor() as weight_cursor:
-                weight_cursor.execute("""
-                        SELECT id, lower, upper 
-                          FROM weights
-                          WHERE id = %s;""", (row_dict["dog_weight"],))
-                row_dict["dog_weight"] = dict(zip(("id", "lower", "upper"), weight_cursor.fetchone()))
-
-            # Convert from wacky in-memory format to byte-string, BYTEA
-            row_dict['image'] = str(bytes(row_dict['image']), 'UTF-8')
-            row_dict['submission_time'] = str(row_dict['submission_time'])
-            out.append(row_dict)
-    return out
-
-
-@cloudfunction(
-    in_schema={
-        "type": "object",
-        "properties": {
             "image": {"type": "string"},
-            "dog_age": {"type": "integer"},
+            "dog_age": {"type": "integer", "minimum": 0},
             "dog_breed": {"type": "string"},
-            "dog_weight": {"type": "integer"},
+            "dog_weight": {"type": "integer", "minimum": 0},
             "user_email": {"type": "string"}
         },
         "additionalProperties": False,
         "minProperties": 5,
     },
     out_schema={
-        "type": "number"
+        "type": "integer"
     })
 def submit_dog(request_json, conn):
+    return _submit_dog(request_json, conn)
+
+
+def _submit_dog(data, conn):
+    """Submits the specified dog.
+    :return: the id of the dog.
+    """
     with conn.cursor() as cursor:
         cursor.execute(
             'INSERT INTO dogs (image, age_months, breed, weight_id, submitter_email) VALUES (%s, %s, %s, %s, %s);',
-            (request_json["image"],
-             request_json["dog_age"],
-             request_json["dog_breed"],
-             request_json["dog_weight"],
-             request_json["user_email"]))
+            (data["image"],
+             data["dog_age"],
+             data["dog_breed"],
+             data["dog_weight"],
+             data["user_email"]))
         cursor.execute("SELECT id FROM dogs WHERE submitter_email = %s ORDER BY id DESC LIMIT 1",
-                       (request_json["user_email"],))
+                       (data["user_email"],))
         id = cursor.fetchone()[0]
 
     conn.commit()
@@ -206,8 +146,8 @@ def _get_dog_pair(voter_uuid, conn):
     in_schema={
         "type": "object",
         "properties": {
-            "dog1_id": {"type": "integer"},
-            "dog2_id": {"type": "integer"},
+            "dog1_id": {"type": "integer", "minimum": 0},
+            "dog2_id": {"type": "integer", "minimum": 0},
             "winner": {"type": "integer"},
             "voter_uuid": {"type": "string"},
         },
@@ -218,8 +158,8 @@ def _get_dog_pair(voter_uuid, conn):
         "anyOf": [{
             "type": "object",
             "properties": {
-                "dog1": {"type": "integer"},
-                "dog2": {"type": "integer"}
+                "dog1": {"type": "integer", "minumum": 0},
+                "dog2": {"type": "integer", "minumum": 0}
             },
             "additionalProperties": False,
             "minProperties": 2,
@@ -230,11 +170,12 @@ def _get_dog_pair(voter_uuid, conn):
 def submit_vote(request_json, conn):
     return _submit_vote(request_json, conn)
 
-def _submit_vote(request_json, conn):
-    id1 = request_json["dog1_id"]
-    id2 = request_json["dog2_id"]
-    winner = request_json["winner"]
-    voter_uuid = request_json["voter_uuid"]
+
+def _submit_vote(data, conn):
+    id1 = data["dog1_id"]
+    id2 = data["dog2_id"]
+    winner = data["winner"]
+    voter_uuid = data["voter_uuid"]
 
     # A mapping from `winner` to results in the vote.
     result = {
@@ -281,7 +222,8 @@ def _submit_vote(request_json, conn):
 def register_voter(request_json, conn):
     return _register_voter(request_json, conn)
 
-def _register_voter(request_json, conn):
+
+def _register_voter(data, conn):
     # TODO read this dynamically from the database to ensure SPoT
     education_levels = ['No high school',
                         'Some high school',
@@ -293,11 +235,13 @@ def _register_voter(request_json, conn):
                         'Post-undergraduate education']
 
     voter_uuid = str(uuid.uuid4())
-    request_json["uuid"] = voter_uuid
-    request_json["northeastern_affiliation"] = request_json["northeastern_relationship"]
-    if request_json["education"] != None:
-        request_json["education"] = education_levels[request_json["education"]]
-    del request_json["northeastern_relationship"]
+    data["uuid"] = voter_uuid
+    data["northeastern_affiliation"] = data["northeastern_relationship"]
+
+    # To allow nulls, we only re-write the value if there is an integer there
+    if data["education"] != None:
+        data["education"] = education_levels[data["education"]]
+    del data["northeastern_relationship"]
 
     with conn.cursor() as cursor:
         cursor.execute(
@@ -311,7 +255,7 @@ def _register_voter(request_json, conn):
             %(dog_ownership)s, 
             %(northeastern_affiliation)s
             )""",
-            request_json)
+            data)
 
     return {**_get_dog_pair(voter_uuid, conn), "voter_uuid": voter_uuid}
 
@@ -332,9 +276,9 @@ def _register_voter(request_json, conn):
             "^[0-9]+$": {
                 "type": "object",
                 "properties": {
-                    "wins": {"type": "number"},
-                    "losses": {"type": "number"},
-                    "ties": {"type": "number"}
+                    "wins": {"type": "integer", "minumum": 0},
+                    "losses": {"type": "integer", "minumum": 0},
+                    "ties": {"type": "integer", "minumum": 0}
                 },
                 "additionalProperties": False,
                 "minProperties": 3,
@@ -345,25 +289,26 @@ def _register_voter(request_json, conn):
 def get_votes(request_json, conn):
     return _get_votes(request_json, conn)
 
+
 def _get_votes(request_json, conn):
     dog_id = request_json["id"]
     with conn.cursor() as cursor:
         select = """
         WITH wins AS (
-          SELECT dog2_id AS dog FROM votes WHERE dog1_id = %s AND result = %s
+          SELECT dog2_id AS dog FROM votes WHERE dog1_id = %(dog_id)s AND result = %(result1)s
           UNION ALL
-          SELECT dog1_id AS dog FROM votes WHERE dog2_id = %s AND result = %s
+          SELECT dog1_id AS dog FROM votes WHERE dog2_id = %(dog_id)s AND result = %(result2)s
         )
         SELECT dog, COUNT(*) FROM wins GROUP BY dog;
         """
 
-        cursor.execute(select, (dog_id, 'win', dog_id, 'loss'))
+        cursor.execute(select, {"dog_id": dog_id, "result1": "win", "result2": "loss"})
         wins = {str(row[0]): row[1] for row in cursor}
 
-        cursor.execute(select, (dog_id, 'loss', dog_id, 'win'))
+        cursor.execute(select, {"dog_id": dog_id, "result1": "loss", "result2": "win"})
         losses = {str(row[0]): row[1] for row in cursor}
 
-        cursor.execute(select, (dog_id, 'tie', dog_id, 'tie'))
+        cursor.execute(select, {"dog_id": dog_id, "result1": "tie", "result2": "tie"})
         ties = {str(row[0]): row[1] for row in cursor}
 
         out = {}
