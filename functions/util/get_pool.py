@@ -30,6 +30,7 @@ def __connect(host):
     pg_config['host'] = host
     return SimpleConnectionPool(1, 1, **pg_config)
 
+
 def get_connection(host="localhost"):
     pg_config["host"] = host
     return connect(**pg_config)

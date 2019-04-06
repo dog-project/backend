@@ -25,8 +25,7 @@ def test_submit_dog_happy_path():
             "dog_weight": 0
         }
 
-        r = json.loads(submit_dog(mock_request(data))[0])
-        dog_id = r
+        dog_id = json.loads(submit_dog(mock_request(data))[0])
 
         dog_data = json.loads(get_dog(mock_request({"id": dog_id}))[0])
         assert dog_data["image"] == image_data, 'UTF-8'

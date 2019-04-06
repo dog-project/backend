@@ -8,15 +8,18 @@ from util.get_pool import get_pool
 pg_pool = None
 
 
-def cloudfunction(input_json=True, in_schema=None, out_schema=None):
+def cloudfunction(in_schema=None, out_schema=None):
     """
 
-    :param input_json: if True, the child function is passed the json from the request, otherwise not
+    :param in_schema: the schema for the input, or a falsy value if there is no input
+    :param out_schema: the schema for the output, or a falsy value if there is no output
     :return: the cloudfunction wrapped function
     """
-
-    jsonschema.Draft7Validator.check_schema(in_schema)
-    jsonschema.Draft7Validator.check_schema(out_schema)
+    # Both schemas must be valid according to jsonschema draft 7, if they are provided.
+    if in_schema:
+        jsonschema.Draft7Validator.check_schema(in_schema)
+    if out_schema:
+        jsonschema.Draft7Validator.check_schema(out_schema)
 
     def cloudfunction_decorator(f):
         """ Wraps a function with two arguments, the first of which is a json object that it expects to be sent with the
@@ -37,9 +40,7 @@ def cloudfunction(input_json=True, in_schema=None, out_schema=None):
                 return cors_options()
 
             # If it's not a CORS OPTIONS request, still include the base header.
-            headers = {
-                'Access-Control-Allow-Origin': '*'
-            }
+            headers = {'Access-Control-Allow-Origin': '*'}
 
             if not pg_pool:
                 pg_pool = get_pool()
@@ -47,12 +48,10 @@ def cloudfunction(input_json=True, in_schema=None, out_schema=None):
             try:
                 conn = pg_pool.getconn()
 
-                if input_json:
+                if in_schema:
                     request_json = request.get_json()
-                    if in_schema:
-                        print(repr({"request_json": request_json}))
-                        jsonschema.validate(request_json, in_schema)
-
+                    print(repr({"request_json": request_json}))
+                    jsonschema.validate(request_json, in_schema)
                     function_output = f(request_json, conn)
                 else:
                     function_output = f(conn)

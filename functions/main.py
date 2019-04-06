@@ -1,3 +1,4 @@
+import traceback
 import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -125,9 +126,13 @@ def _get_dog_pair(voter_uuid, conn):
              dogs2 AS (SELECT dogs.id AS dog2 FROM dogs),
              dog_pairs AS (SELECT * FROM dogs1 CROSS JOIN dogs2 WHERE dog1 != dog2),
              seen_pairs AS (
-              SELECT dog1_id, dog2_id AS dog FROM votes JOIN voters ON (voter_id = voters.id) WHERE voters.uuid = %(vid)s
+              SELECT dog1_id, dog2_id AS dog FROM votes 
+              JOIN voters ON (voter_id = voters.id) 
+                WHERE voters.uuid = %(vid)s
               UNION ALL 
-              SELECT dog2_id, dog1_id AS dog FROM votes JOIN voters ON (voter_id = voters.id) WHERE voters.uuid = %(vid)s
+              SELECT dog2_id, dog1_id AS dog FROM votes 
+                JOIN voters ON (voter_id = voters.id) 
+                WHERE voters.uuid = %(vid)s
              )
         
         SELECT dog1, dog2 FROM dog_pairs
@@ -139,6 +144,7 @@ def _get_dog_pair(voter_uuid, conn):
         try:
             return cursor.fetchone()
         except psycopg2.ProgrammingError:
+            traceback.print_exc()
             return None
 
 
@@ -190,7 +196,7 @@ def _register_voter(data, conn):
     data["northeastern_affiliation"] = data["northeastern_relationship"]
 
     # To allow nulls, we only re-write the value if there is an integer there
-    if data["education"] != None:
+    if data["education"] is not None:
         data["education"] = education_levels[data["education"]]
     del data["northeastern_relationship"]
 
@@ -255,7 +261,10 @@ def _submit_vote(data, conn):
 
     with conn.cursor() as cursor:
         cursor.execute("""SELECT id FROM voters WHERE uuid = %s""", (voter_uuid,))
+
+        # Raises a psycopg2.ProgrammingError if there is no uuid, handled in @cloudfunction
         voter_id = cursor.fetchone()[0]
+
         cursor.execute("""INSERT INTO votes (dog1_id, dog2_id, result, voter_id) VALUES (%s, %s, %s, %s)""",
                        (id1, id2, result[winner], voter_id))
 
@@ -274,7 +283,9 @@ def _submit_vote(data, conn):
     out_schema={
         "type": "object",
         "patternProperties": {
-            # this one is hard to read, but says keys are strings made of digits (dog ids)
+            # this one is hard to read, but says keys are strings made of digits (dog ids), pointing to
+            # values that are dictionaries with win/loss/tie counts
+            # this is the results against each dog that has matchups against the dog with the given id.
             "^[0-9]+$": {
                 "type": "object",
                 "properties": {
@@ -292,8 +303,8 @@ def get_votes(request_json, conn):
     return _get_votes(request_json, conn)
 
 
-def _get_votes(request_json, conn):
-    dog_id = request_json["id"]
+def _get_votes(data, conn):
+    dog_id = data["id"]
     with conn.cursor() as cursor:
         select = """
         WITH wins AS (
@@ -321,3 +332,24 @@ def _get_votes(request_json, conn):
                 "losses": losses.get(key, 0),
             }
         return out
+
+
+@cloudfunction(
+    out_schema={
+        "type": "array",
+        "items": [
+            {
+                "type": "number"
+            }
+        ],
+        "uniqueItems": True
+    }
+)
+def list_dogs(conn):
+    return _list_dogs(conn)
+
+
+def _list_dogs(conn):
+    with conn.cursor() as cursor:
+        cursor.execute("""SELECT id FROM dogs;""")
+        return [row[0] for row in cursor]
