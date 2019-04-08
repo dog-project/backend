@@ -72,7 +72,8 @@ def test_voting_changes_vote_counts(populated_database_conn):
 
 
 @pytest.mark.slow
-def test_vote_duplicate(conn):
+def test_vote_duplicate(populated_database_conn):
+    conn = populated_database_conn
     voter = {
         "gender_identity": "masculine",
         "age": 20,
