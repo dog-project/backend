@@ -66,6 +66,7 @@ CREATE TABLE voters
 CREATE TYPE vote_result AS ENUM ('win', 'loss', 'tie');
 
 -- result is the result of dog1 against dog2, as in, a win means dog1 beat dog2.
+-- TODO change this table: should be something like "winner_id, loser_id, is_tie, left_id"
 CREATE TABLE votes
 (
   id              SERIAL PRIMARY KEY,
