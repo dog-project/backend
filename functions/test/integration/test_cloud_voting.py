@@ -1,34 +1,14 @@
-import base64
 import json
 from unittest.mock import Mock
 
-import pytest
-
-from main import submit_dog, get_dog_pair, submit_vote, get_votes, register_voter
+from main import get_dog_pair, submit_vote, get_votes, register_voter
 
 
 def mock_request(data):
     return Mock(get_json=Mock(return_value=data), args=data)
 
 
-def test_get_dog_pair():
-    # if get_dog_pair(mock_request(None))[1] != 200:
-    #     # If it fails, try adding two dogs, in hopes that the error was a lack of dogs in the db
-    #     for i in range(2):
-    #         image_data = b"Thisisatestimage"
-    #         email = ''.join("test@example.com")
-    #
-    #         data = {
-    #             "image": image_data,
-    #             "dog_age": 12,
-    #             "dog_breed": "mutt",
-    #             "user_email": email,
-    #             "dog_weight": 3
-    #         }
-    #
-    #         request = mock_request(data)
-    #         submit_dog(request)
-
+def test_vote():
     voter_data = {
             "gender_identity": "test",
             "age": 20,
@@ -81,3 +61,5 @@ def test_get_dog_pair():
     assert vote_count_after["wins"] == vote_count["wins"]
     assert vote_count_after["losses"] == vote_count["losses"]
     assert vote_count_after["ties"] == vote_count["ties"] + 1
+
+

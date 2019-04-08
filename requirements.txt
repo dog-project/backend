@@ -1,3 +1,5 @@
 psycopg2-binary
-pytest
 jsonschema
+pytest
+hypothesis
+hypothesis-jsonschema

@@ -1,3 +1,13 @@
+-- this file represents the current status of the database:
+-- however, this whole script has never been run in GCP SQL, because
+-- incremental changes have been made.
+-- TODO move to a migration based system.
+
+-- TODO add logical deletion to dogs/voters. Lack of logical deletion required real deletion
+--      for running the first iteration of the dog project, which lead to problems as the
+--      emails of submitters were lost. Either have a table of "allowed dogs" which is cross-
+--      referenced in the vote selection (maybe with a view of only eligible dogs), or similar
+
 CREATE TABLE weights
 (
   id    INTEGER PRIMARY KEY,
@@ -30,6 +40,7 @@ CREATE TABLE dogs
 
 
 CREATE TYPE education_level AS ENUM (
+  'No high school',
   'Some high school',
   'High school diploma or equivalent',
   'Vocational training',
@@ -52,9 +63,10 @@ CREATE TABLE voters
   northeastern_affiliation VARCHAR(300)
 );
 
-CREATE TYPE VOTE_RESULT AS ENUM ('win', 'loss', 'tie');
+CREATE TYPE vote_result AS ENUM ('win', 'loss', 'tie');
 
 -- result is the result of dog1 against dog2, as in, a win means dog1 beat dog2.
+-- TODO change this table: should be something like "winner_id, loser_id, is_tie, left_id"
 CREATE TABLE votes
 (
   id              SERIAL PRIMARY KEY,
@@ -62,5 +74,5 @@ CREATE TABLE votes
   voter_id        INTEGER REFERENCES voters (id),
   dog1_id         INTEGER REFERENCES dogs (id),
   dog2_id         INTEGER REFERENCES dogs (id),
-  result          VOTE_RESULT
+  result          vote_result
 );
