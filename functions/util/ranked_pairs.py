@@ -33,13 +33,6 @@ def ranked_pairs_ordering(dog_ids, matchups):
         except:
             pass
 
-    ordering = []
-
-    while g.nodes:
-        sources = [n for n in g if g.in_degree(n) == 0]
-        assert sources
-        # note: these all technically tie, so we're picking at random
-        ordering += sources
-        g.remove_nodes_from(sources)
-
+    # now, we know that g is a DAG, so we can use networkx's topological sort.
+    ordering = networkx.topological_sort(g)
     return [dog_ids[x] for x in ordering]
