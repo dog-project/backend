@@ -367,7 +367,7 @@ def _list_dogs(conn):
         "uniqueItems": True
     })
 def get_ranking(conn):
-    _get_ranking(conn)
+    return _get_ranking(conn)
 
 
 def _get_ranking(conn):
