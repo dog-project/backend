@@ -4,6 +4,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from util.cloudfunction import cloudfunction
+from util.elo import compute_elo
 from util.ranked_pairs import ranked_pairs_ordering
 
 
@@ -375,72 +376,72 @@ def _get_ranking(conn):
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(
-"""
-WITH wins AS (
-    SELECT
-      dog1,
-      dog2,
-      COUNT(*) AS win_count
-    FROM
-      (SELECT
-         dog1_id AS dog1,
-         dog2_id AS dog2
-       FROM votes
-       WHERE result = 'win'
-       UNION ALL
-       SELECT
-         dog2_id AS dog1,
-         dog1_id AS dog2
-       FROM votes
-       WHERE result = 'loss') AS win
-    GROUP BY dog1, dog2
-), losses AS (
-    SELECT
-      dog1,
-      dog2,
-      COUNT(*) AS loss_count
-    FROM
-      (SELECT
-         dog1_id AS dog1,
-         dog2_id AS dog2
-       FROM votes
-       WHERE result = 'loss'
-       UNION ALL
-       SELECT
-         dog2_id AS dog1,
-         dog1_id AS dog2
-       FROM votes
-       WHERE result = 'win') AS loss
-    GROUP BY dog1, dog2
-), ties AS (
-    SELECT
-      dog1,
-      dog2,
-      COUNT(*) AS tie_count
-    FROM
-      (SELECT
-         dog1_id AS dog1,
-         dog2_id AS dog2
-       FROM votes
-       WHERE result = 'tie'
-       UNION ALL
-       SELECT
-         dog2_id AS dog1,
-         dog1_id AS dog2
-       FROM votes
-       WHERE result = 'tie') AS tie
-    GROUP BY dog1, dog2
-)
-SELECT
-  dog1,
-  dog2,
-  SUM(win_count :: FLOAT - loss_count :: FLOAT) / SUM(loss_count + win_count + tie_count) AS margin
-FROM losses
-  LEFT OUTER JOIN ties USING (dog1, dog2)
-  LEFT OUTER JOIN wins USING (dog1, dog2)
-GROUP BY dog1, dog2
-ORDER BY margin DESC;
-""")
+            """
+            WITH wins AS (
+                SELECT
+                  dog1,
+                  dog2,
+                  COUNT(*) AS win_count
+                FROM
+                  (SELECT
+                     dog1_id AS dog1,
+                     dog2_id AS dog2
+                   FROM votes
+                   WHERE result = 'win'
+                   UNION ALL
+                   SELECT
+                     dog2_id AS dog1,
+                     dog1_id AS dog2
+                   FROM votes
+                   WHERE result = 'loss') AS win
+                GROUP BY dog1, dog2
+            ), losses AS (
+                SELECT
+                  dog1,
+                  dog2,
+                  COUNT(*) AS loss_count
+                FROM
+                  (SELECT
+                     dog1_id AS dog1,
+                     dog2_id AS dog2
+                   FROM votes
+                   WHERE result = 'loss'
+                   UNION ALL
+                   SELECT
+                     dog2_id AS dog1,
+                     dog1_id AS dog2
+                   FROM votes
+                   WHERE result = 'win') AS loss
+                GROUP BY dog1, dog2
+            ), ties AS (
+                SELECT
+                  dog1,
+                  dog2,
+                  COUNT(*) AS tie_count
+                FROM
+                  (SELECT
+                     dog1_id AS dog1,
+                     dog2_id AS dog2
+                   FROM votes
+                   WHERE result = 'tie'
+                   UNION ALL
+                   SELECT
+                     dog2_id AS dog1,
+                     dog1_id AS dog2
+                   FROM votes
+                   WHERE result = 'tie') AS tie
+                GROUP BY dog1, dog2
+            )
+            SELECT
+              dog1,
+              dog2,
+              SUM(win_count :: FLOAT - loss_count :: FLOAT) / SUM(loss_count + win_count + tie_count) AS margin
+            FROM losses
+              LEFT OUTER JOIN ties USING (dog1, dog2)
+              LEFT OUTER JOIN wins USING (dog1, dog2)
+            GROUP BY dog1, dog2
+            ORDER BY margin DESC;
+            """)
         results = cursor.fetchall()
 
     mat = [[0 for _ in range(len(ids))] for _ in range(len(ids))]
@@ -450,11 +451,24 @@ ORDER BY margin DESC;
         margin = result["margin"]
         mat[ids.index(dog1)][ids.index(dog2)] = margin
 
-    # for dog in ids:
-    #     votes = _get_votes({"id": dog}, conn)
-    #     for opponent in votes:
-    #         vote = votes[opponent]
-    #         margin = (vote["wins"] - vote["losses"]) / (vote["wins"] + vote["losses"] + vote["ties"])
-    #         mat[ids.index(dog)][ids.index(int(opponent))] = margin
-
     return ranked_pairs_ordering(ids, mat)
+
+
+@cloudfunction(
+    out_schema={
+        "type": "array",
+        "items": [
+            {"type": "array",
+             "items": [{"type": "number"}]
+             }
+        ],
+        "uniqueItems": True
+    })
+def get_elo_ranking(conn):
+    return _get_elo_ranking(conn)
+
+
+def _get_elo_ranking(conn):
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT dog1_id, dog2_id, result from votes")
+        return compute_elo(cursor)

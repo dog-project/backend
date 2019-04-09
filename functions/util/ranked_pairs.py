@@ -12,14 +12,15 @@ def ranked_pairs_ordering(dog_ids, matchups):
         return dog_ids
     assert len(dog_ids) == len(matchups) == len(matchups[0])
 
-
     g = networkx.DiGraph()
     g.add_nodes_from(range(len(matchups)))
 
     edges = []
     for i in range(len(matchups)):
         for j in range(len(matchups[0])):
-            edges.append((i, j, matchups[i][j]))
+            margin = matchups[i][j]
+            if margin is not None:
+                edges.append((i, j, margin))
 
     edges.sort(key=lambda x: x[2], reverse=True)
 
