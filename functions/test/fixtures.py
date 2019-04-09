@@ -20,7 +20,9 @@ def connect_to_clean_db():
 
 @pytest.fixture()
 def conn():
-    return connect_to_clean_db()
+    c = connect_to_clean_db()
+    yield c
+    c.close()
 
 
 @pytest.fixture()
@@ -42,5 +44,6 @@ def populated_database_conn():
             cursor.execute("""INSERT INTO votes (voter_id, dog1_id, dog2_id, result) VALUES (%s, %s, %s, %s) """,
                            (1, dog1, dog2, winner))
 
-    return conn
+    yield conn
+    conn.close()
 

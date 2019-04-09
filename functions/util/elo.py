@@ -15,7 +15,7 @@ def compute_elo(results):
     random.shuffle(results)
 
     elo = {}
-    for id1, id2, outcome in results:
+    for id1, id2, result in results:
         # Get the current rankings, or 1200 if they haven't been seen yet
         rank1 = elo.get(id1, 1200)
         rank2 = elo.get(id2, 1200)
@@ -24,13 +24,14 @@ def compute_elo(results):
         # have an expected outcome of 10:1 win:loss.
         expected_outcome = int(1 / (1 + 10 ** ((rank2 - rank1) / 400)) * 1000) / 1000
 
+
         # This is the outcome for the first contestant
         outcome = None
-        if outcome == "win":
+        if result == "win":
             outcome = 1
-        if outcome == "loss":
+        if result == "loss":
             outcome = 0
-        if outcome == "tie":
+        if result == "tie":
             outcome = 0.5
 
         delta = k * (outcome - expected_outcome)
