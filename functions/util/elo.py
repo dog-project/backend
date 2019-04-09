@@ -24,21 +24,17 @@ def compute_elo(results):
         # have an expected outcome of 10:1 win:loss.
         expected_outcome = int(1 / (1 + 10 ** ((rank2 - rank1) / 400)) * 1000) / 1000
 
-        outcome1 = None
-        outcome2 = None
+        # This is the outcome for the first contestant
+        outcome = None
         if outcome == "win":
-            outcome1, outcome2 = (1, 0)
+            outcome = 1
         if outcome == "loss":
-            outcome1, outcome2 = (0, 1)
+            outcome = 0
         if outcome == "tie":
-            outcome1, outcome2 = (0.5, 0.5)
+            outcome = 0.5
 
-        delta = k * (outcome1 - expected_outcome)
+        delta = k * (outcome - expected_outcome)
         elo[id1] = rank1 + delta
         elo[id2] = rank2 - delta
-        print(rank1, rank2, expected_outcome, outcome1, outcome2, elo[id1], elo[id2])
 
     return sorted([[id, elo_score] for id, elo_score in elo.items()], key=lambda r: r[1], reverse=True)
-
-print(sum([x[1] for x in compute_elo([(1, 2, "win"), (1, 3, "win"), (1, 4, "tie")] * 200)])
-      / 4)
