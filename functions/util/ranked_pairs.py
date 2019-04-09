@@ -1,7 +1,4 @@
-import traceback
-
 import networkx
-
 
 def ranked_pairs_ordering(dog_ids, matchups):
     """ Implements https://en.wikipedia.org/wiki/Ranked_pairs
@@ -25,7 +22,6 @@ def ranked_pairs_ordering(dog_ids, matchups):
             edges.append((i, j, matchups[i][j]))
 
     edges.sort(key=lambda x: x[2], reverse=True)
-    print(f"edges: {edges}")
 
     for edge in edges:
         g.add_edge(edge[0], edge[1])
@@ -36,13 +32,10 @@ def ranked_pairs_ordering(dog_ids, matchups):
             g.remove_edge(edge[0], edge[1])
         except:
             pass
-            # traceback.print_exc()
 
     ordering = []
 
-    print()
     while g.nodes:
-        print(f"Edges: {g.edges}, Nodes: {g.nodes}")
         sources = [n for n in g if g.in_degree(n) == 0]
         assert sources
         # note: these all technically tie, so we're picking at random

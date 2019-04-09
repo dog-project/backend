@@ -4,6 +4,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from util.cloudfunction import cloudfunction
+from util.ranked_pairs import ranked_pairs_ordering
 
 
 @cloudfunction(
@@ -289,9 +290,9 @@ def _submit_vote(data, conn):
             "^[0-9]+$": {
                 "type": "object",
                 "properties": {
-                    "wins": {"type": "integer", "minumum": 0},
-                    "losses": {"type": "integer", "minumum": 0},
-                    "ties": {"type": "integer", "minumum": 0}
+                    "wins": {"type": "integer", "minimum": 0},
+                    "losses": {"type": "integer", "minimum": 0},
+                    "ties": {"type": "integer", "minimum": 0}
                 },
                 "additionalProperties": False,
                 "minProperties": 3,
@@ -353,3 +354,32 @@ def _list_dogs(conn):
     with conn.cursor() as cursor:
         cursor.execute("""SELECT id FROM dogs;""")
         return [row[0] for row in cursor]
+
+
+@cloudfunction(
+    out_schema={
+        "type": "array",
+        "items": [
+            {
+                "type": "number"
+            }
+        ],
+        "uniqueItems": True
+    })
+def get_ranking(conn):
+    _get_ranking(conn)
+
+
+def _get_ranking(conn):
+    ids = _list_dogs(conn)
+
+    mat = [[0 for _ in range(len(ids))] for _ in range(len(ids))]
+
+    for dog in ids:
+        votes = _get_votes({"id": dog}, conn)
+        for opponent in votes:
+            vote = votes[opponent]
+            margin = (vote["wins"] - vote["losses"]) / (vote["wins"] + vote["losses"] + vote["ties"])
+            mat[ids.index(dog)][ids.index(int(opponent))] = margin
+
+    return ranked_pairs_ordering(ids, mat)
