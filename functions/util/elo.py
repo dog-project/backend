@@ -30,4 +30,4 @@ def compute_elo(results):
         elo[id1] = rank1 + k * (outcome1 - expected_outcome)
         elo[id2] = rank2 + k * (outcome2 - expected_outcome)
 
-    return sorted([(id, elo_score) for id, elo_score in elo.items()], key=lambda r: r[1], reverse=True)
+    return sorted([[id, elo_score] for id, elo_score in elo.items()], key=lambda r: r[1], reverse=True)
