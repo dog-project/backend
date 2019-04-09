@@ -19,14 +19,15 @@ def test_get_ranking(populated_database_conn):
     uuid = registration_result["voter_uuid"]
 
     id1 = ids[0]
-    id2 = ids[1]
 
-    _submit_vote({
-        "dog1_id": id1,
-        "dog2_id": id2,
-        "winner": id1,
-        "voter_uuid": uuid,
-    }, conn)
+    for i in range(100):
+        for id in ids[1:]:
+            _submit_vote({
+                "dog1_id": id1,
+                "dog2_id": id,
+                "winner": id1,
+                "voter_uuid": uuid,
+            }, conn)
 
     ranking = _get_ranking(conn)
     assert ranking[0] == id1

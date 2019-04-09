@@ -48,7 +48,6 @@ def test_highest_magnitude_matchup_ordering_preserved(ids_and_matrix):
                 best_is.append(i)
                 best_js.append(j)
 
-    print(f"Js: {best_js}, Is: {best_is}")
     ranks = ranked_pairs_ordering(ids, matrix)
     assert any([ranks.index(ids[dog_i]) <= ranks.index(ids[dog_j])
                 for dog_i, dog_j in zip(best_is, best_js)])
