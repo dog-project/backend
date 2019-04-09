@@ -3,3 +3,4 @@ jsonschema
 pytest
 hypothesis
 hypothesis-jsonschema
+networkx
