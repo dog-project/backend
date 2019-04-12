@@ -4,3 +4,6 @@ pytest
 hypothesis
 hypothesis-jsonschema
 networkx
+# For visualizing the final ranking and pairwise comparisons
+matplotlib
+graphviz
