@@ -52,12 +52,28 @@ def get_votes(conn, filters):
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute("""
-        SELECT dog1_id as dog1, dog2_id as dog2, result 
+        SELECT dog1_id as dog1, dog2_id as dog2, result, submission_time, voter_id
         FROM votes LEFT JOIN voters ON (votes.voter_id = voters.id) WHERE 1 = 1 """
                        + filter_statement(filters)
                        + """ ORDER BY random();""")
 
         results = cursor.fetchall()
+
+        if filters["first_n"]:
+            n = filters["first_n"]
+            voter_votes = {v["voter_id"]: [] for v in results}
+
+            for result in results:
+                voter_votes[result["voter_id"]].append(result)
+
+            for v in voter_votes:
+                voter_votes[v] = sorted(voter_votes[v], key=lambda x: x["submission_time"])[0:n]
+            results = [v for vote_list in voter_votes.values() for v in vote_list]
+
+        if filters["ignore_dogs"]:
+            to_ignore = [int(dog_id_str) for dog_id_str in filters["ignore_dogs"]]
+            results = [r for r in results if r["dog1"] not in to_ignore and r["dog2"] not in to_ignore]
+
     return results
 
 
@@ -95,7 +111,7 @@ def rank_function(ranking_method, filters):
         return rank
 
     def copeland(conn):
-        g = get_victory_graph(conn)
+        g = get_victory_graph(conn, filters)
         rankings = sorted([(n, g.out_degree(n) - g.in_degree(n)) for n in g.nodes],
                           key=lambda x: x[1], reverse=True)
 
@@ -247,6 +263,8 @@ if __name__ == '__main__':
     parser.add_argument("--gender")
     parser.add_argument("--age_min", type=int)
     parser.add_argument("--age_max", type=int)
+    parser.add_argument("--first_n", type=int)
+    parser.add_argument("--ignore_dogs", nargs="*")
     args = parser.parse_args()
 
     filters = {
@@ -255,6 +273,8 @@ if __name__ == '__main__':
         "gender": args.gender,
         "age_min": args.age_min,
         "age_max": args.age_max,
+        "first_n": args.first_n,
+        "ignore_dogs": args.ignore_dogs,
     }
 
     main(args.credentials, args.method, args.output_format, args.flatten_ties, filters)
