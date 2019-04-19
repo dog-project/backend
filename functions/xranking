@@ -133,20 +133,20 @@ def rank_function(ranking_method, filters):
         return compute_elo([(v["dog1"], v["dog2"], v["result"]) for v in votes])
 
     def minimax(conn):
-        matchups = get_matchups(conn, filters)
+        g = get_matchup_graph(conn, filters)
 
-        wins_and_ties_vs_losses = {}
-        for dog in matchups:
-            wins_and_ties_vs_losses[dog] = [0, 0]
-            for matchup in matchups[dog]:
-                wins = matchups[dog][matchup]["wins"]
-                ties = matchups[dog][matchup]["ties"]
-                losses = matchups[dog][matchup]["losses"]
-                wins_and_ties_vs_losses[dog][0] += wins + ties
-                wins_and_ties_vs_losses[dog][1] += losses
+        lowest_loss_rate = float("inf")
+        winner = None
 
-        ratios = [(dog, x[0] / ((x[0] + x[1]) or float("inf"))) for dog, x in wins_and_ties_vs_losses.items()]
-        return sorted(ratios, key=lambda x: x[1], reverse=True)
+        for n in g.nodes:
+            greatest_margin = max(g.get_edge_data(u, v)["margin"] for u, v in g.in_edges(n))
+            if greatest_margin < lowest_loss_rate:
+                lowest_loss_rate = greatest_margin
+                winner = n
+
+        assert winner is not None
+        return [[winner]]
+
 
     def win_ratio(conn):
         matchups = get_matchups(conn, filters)
@@ -163,12 +163,29 @@ def rank_function(ranking_method, filters):
         ratios = [(dog, x[0] / ((x[0] + x[1]) or float("inf"))) for dog, x in wins_and_ties_vs_losses.items()]
         return sorted(ratios, key=lambda x: x[1], reverse=True)
 
+    def win_tie_ratio(conn):
+        matchups = get_matchups(conn, filters)
+
+        wins_and_ties_vs_losses = {}
+        for dog in matchups:
+            wins_and_ties_vs_losses[dog] = [0, 0]
+            for matchup in matchups[dog]:
+                wins = matchups[dog][matchup]["wins"]
+                ties = matchups[dog][matchup]["ties"]
+                losses = matchups[dog][matchup]["losses"]
+                wins_and_ties_vs_losses[dog][0] += wins + ties
+                wins_and_ties_vs_losses[dog][1] += losses
+
+        ratios = [(dog, x[0] / ((x[0] + x[1]) or float("inf"))) for dog, x in wins_and_ties_vs_losses.items()]
+        return sorted(ratios, key=lambda x: x[1], reverse=True)
+
     methods = {
         "ranked_pairs": ranked_pairs,
         "copeland": copeland,
         "elo": elo,
         "minimax": minimax,
-        "win_ratio": win_ratio
+        "win_ratio": win_ratio,
+        "win__tie_ratio": win_tie_ratio,
     }
 
     return methods[ranking_method]
@@ -228,7 +245,7 @@ def get_matchup_graph(conn, filters):
 
 
 def get_victory_graph(conn, filters):
-    """edges go from a winner to a loser"""
+    """every out-edge is a loss to another candidate, every in-edge is a win"""
     matchups = get_matchup_graph(conn, filters)
     edges_to_remove = []
     for u, v in matchups.edges:
@@ -254,7 +271,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--credentials", required=True,
                         help="Path to the credentials for the postgres instance the data is stored in.")
-    parser.add_argument("--method", required=True, choices=["ranked_pairs", "copeland", "elo", "minimax", "win_ratio"])
+    parser.add_argument("--method", required=True,
+                        choices=["ranked_pairs", "copeland", "elo", "minimax", "win_ratio", "win_tie_ratio"])
     parser.add_argument("--output_format", default="python_array", choices=["python_array", "columns"])
     parser.add_argument("--flatten_ties", action="store_true")
     parser.add_argument("--remove_dogs")
