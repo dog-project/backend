@@ -6,9 +6,9 @@ Computes a ranking for dogs, then writes the ranking to stdout in the specified 
 # filter by vote number, as in the number of votes a user has cast (first 20, only votes after the first 20, etc)
 
 
-
 import argparse
 import json
+import random
 
 import networkx
 from psycopg2.extras import RealDictCursor
@@ -17,7 +17,7 @@ from util.elo import compute_elo
 from util.get_pool import get_connection
 
 
-def main(credentials, ranking_method, output_format, flatten_ties, filters):
+def main(credentials, ranking_method, output_format, filters):
     with open(credentials) as f:
         connection_details = json.load(f)
 
@@ -26,8 +26,8 @@ def main(credentials, ranking_method, output_format, flatten_ties, filters):
     rank_func = rank_function(ranking_method, filters)
     rank = rank_func(conn)
 
-    if flatten_ties:
-        rank = [x for row in rank for x in row]
+    # if flatten_ties:
+    #     rank = [x for row in rank for x in row]
 
     print(format_rank(rank, output_format))
 
@@ -37,25 +37,31 @@ def get_votes(conn, filters):
 
     def filter_statement(filters):
         with conn.cursor() as cursor:
+            def mogrify(string, arg):
+                return bytes.decode(cursor.mogrify(string, args))
+
             f = ""
             if filters["education"]:
-                f += bytes.decode(cursor.mogrify("AND voters.education = %s", (filters["education"],)))
+                f += mogrify("AND voters.education = %s", (filters["education"],))
             if filters["location"]:
-                f += bytes.decode(cursor.mogrify("AND voters.location = %s", (filters["location"],)))
+                f += mogrify("AND voters.location = %s", (filters["location"],))
             if filters["gender"]:
-                f += bytes.decode(cursor.mogrify("AND voters.gender_identity = %s", (filters["gender"],)))
+                f += mogrify("AND voters.gender_identity = %s", (filters["gender"],))
             if filters["age_min"]:
-                f += bytes.decode(cursor.mogrify("AND voters.age >= %s", (filters["age_min"],)))
+                f += mogrify("AND voters.age >= %s", (filters["age_min"],))
             if filters["age_max"]:
-                f += bytes.decode(cursor.mogrify("AND voters.age <= %s", (filters["age_max"],)))
+                f += mogrify("AND voters.age <= %s", (filters["age_max"],))
             return f
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-        cursor.execute("""
-        SELECT dog1_id as dog1, dog2_id as dog2, result, submission_time, voter_id
-        FROM votes LEFT JOIN voters ON (votes.voter_id = voters.id) WHERE 1 = 1 """
-                       + filter_statement(filters)
-                       + """ ORDER BY random();""")
+        cursor.execute(
+            """
+            SELECT dog1_id as dog1, dog2_id as dog2, result, submission_time, voter_id
+            FROM votes LEFT JOIN voters ON (votes.voter_id = voters.id) WHERE 1 = 1
+             AND votes.submission_time >= make_date(2019, 4, 3)
+             AND votes.submission_time <= make_date(2019, 4, 22) """
+            + filter_statement(filters)
+            + """ ORDER BY random();""")
 
         results = cursor.fetchall()
 
@@ -102,51 +108,30 @@ def rank_function(ranking_method, filters):
                 pass
 
         assert networkx.is_directed_acyclic_graph(g)
-
-        rank = []
-        while g.nodes:
-            sources = [n for n in g.nodes if g.in_degree(n) == 0]
-            rank.append(sources)
-            g.remove_nodes_from(sources)
-        return rank
+        return list(networkx.topological_sort(g))
 
     def copeland(conn):
         g = get_victory_graph(conn, filters)
-        rankings = sorted([(n, g.out_degree(n) - g.in_degree(n)) for n in g.nodes],
-                          key=lambda x: x[1], reverse=True)
-
-        # Create nested pairs for ties, there's probably a better way to do this
-        idx = 0
-        nested_ranks = []
-        while idx < len(rankings):
-            next_rank_set = [rankings[idx]]
-            idx += 1
-            while idx < len(rankings) and rankings[idx][1] == next_rank_set[0][1]:
-                next_rank_set.append(rankings[idx])
-                idx += 1
-            nested_ranks.append(next_rank_set)
-
-        return nested_ranks
+        return sorted([(n, g.out_degree(n) - g.in_degree(n)) for n in g.nodes],
+                      key=lambda x: x[1], reverse=True)
 
     def elo(conn):
         votes = get_votes(conn, filters)
+        random.shuffle(votes)
         return compute_elo([(v["dog1"], v["dog2"], v["result"]) for v in votes])
 
     def minimax(conn):
         g = get_matchup_graph(conn, filters)
 
-        lowest_loss_rate = float("inf")
-        winner = None
-
-        for n in g.nodes:
-            greatest_margin = max(g.get_edge_data(u, v)["margin"] for u, v in g.in_edges(n))
-            if greatest_margin < lowest_loss_rate:
-                lowest_loss_rate = greatest_margin
-                winner = n
-
-        assert winner is not None
-        return [[winner]]
-
+        # lowest_loss_rate = float("inf")
+        # winner = None
+        #
+        # for n in g.nodes:
+        #     greatest_margin = max(g.get_edge_data(u, v)["margin"] for u, v in g.in_edges(n))
+        #     if greatest_margin < lowest_loss_rate:
+        #         lowest_loss_rate = greatest_margin
+        #         winner = n
+        return sorted(g.nodes, key=lambda n: max(g.get_edge_data(u, v)["margin"] for u, v in g.in_edges(n)))
 
     def win_ratio(conn):
         matchups = get_matchups(conn, filters)
@@ -160,7 +145,7 @@ def rank_function(ranking_method, filters):
                 wins_and_ties_vs_losses[dog][0] += wins
                 wins_and_ties_vs_losses[dog][1] += losses
 
-        ratios = [(dog, x[0] / ((x[0] + x[1]) or float("inf"))) for dog, x in wins_and_ties_vs_losses.items()]
+        ratios = [(dog, (x[0] / ((x[0] + x[1]) or float("inf")))) for dog, x in wins_and_ties_vs_losses.items()]
         return sorted(ratios, key=lambda x: x[1], reverse=True)
 
     def win_tie_ratio(conn):
@@ -176,7 +161,7 @@ def rank_function(ranking_method, filters):
                 wins_and_ties_vs_losses[dog][0] += wins + ties
                 wins_and_ties_vs_losses[dog][1] += losses
 
-        ratios = [(dog, x[0] / ((x[0] + x[1]) or float("inf"))) for dog, x in wins_and_ties_vs_losses.items()]
+        ratios = [(dog, (x[0] / ((x[0] + x[1]) or float("inf")))) for dog, x in wins_and_ties_vs_losses.items()]
         return sorted(ratios, key=lambda x: x[1], reverse=True)
 
     methods = {
@@ -274,7 +259,7 @@ if __name__ == '__main__':
     parser.add_argument("--method", required=True,
                         choices=["ranked_pairs", "copeland", "elo", "minimax", "win_ratio", "win_tie_ratio"])
     parser.add_argument("--output_format", default="python_array", choices=["python_array", "columns"])
-    parser.add_argument("--flatten_ties", action="store_true")
+    # parser.add_argument("--flatten_ties", action="store_true")
     parser.add_argument("--remove_dogs")
     parser.add_argument("--education")
     parser.add_argument("--location")
@@ -295,4 +280,4 @@ if __name__ == '__main__':
         "ignore_dogs": args.ignore_dogs,
     }
 
-    main(args.credentials, args.method, args.output_format, args.flatten_ties, filters)
+    main(args.credentials, args.method, args.output_format, filters)
