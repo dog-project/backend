@@ -185,7 +185,7 @@ def rank_function(ranking_method, filters):
         "elo": elo,
         "minimax": minimax,
         "win_ratio": win_ratio,
-        "win__tie_ratio": win_tie_ratio,
+        "win_tie_ratio": win_tie_ratio,
     }
 
     return methods[ranking_method]
