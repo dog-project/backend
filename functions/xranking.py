@@ -32,31 +32,32 @@ def main(credentials, ranking_method, output_format, flatten_ties, filters):
     print(format_rank(rank, output_format))
 
 
+def filter_statement(conn, filters):
+    with conn.cursor() as cursor:
+        f = ""
+        if filters["education"]:
+            f += bytes.decode(cursor.mogrify("AND voters.education = %s", (filters["education"],)))
+        if filters["location"]:
+            f += bytes.decode(cursor.mogrify("AND voters.location = %s", (filters["location"],)))
+        if filters["gender"]:
+            f += bytes.decode(cursor.mogrify("AND voters.gender_identity = %s", (filters["gender"],)))
+        if filters["age_min"]:
+            f += bytes.decode(cursor.mogrify("AND voters.age >= %s", (filters["age_min"],)))
+        if filters["age_max"]:
+            f += bytes.decode(cursor.mogrify("AND voters.age <= %s", (filters["age_max"],)))
+        if filters["voter"]:
+            f += bytes.decode(cursor.mogrify("AND voters.id = %s", (int(filters["voter"]),)))
+        return f
+
 def get_votes(conn, filters):
     """Returns a list of each vote, as an array of dictionaries of shape {"dog1":…, "dog2":…, "result":…} """
 
-    def filter_statement(filters):
-        with conn.cursor() as cursor:
-            f = ""
-            if filters["education"]:
-                f += bytes.decode(cursor.mogrify("AND voters.education = %s", (filters["education"],)))
-            if filters["location"]:
-                f += bytes.decode(cursor.mogrify("AND voters.location = %s", (filters["location"],)))
-            if filters["gender"]:
-                f += bytes.decode(cursor.mogrify("AND voters.gender_identity = %s", (filters["gender"],)))
-            if filters["age_min"]:
-                f += bytes.decode(cursor.mogrify("AND voters.age >= %s", (filters["age_min"],)))
-            if filters["age_max"]:
-                f += bytes.decode(cursor.mogrify("AND voters.age <= %s", (filters["age_max"],)))
-            if filters["voter"]:
-                f += bytes.decode(cursor.mogrify("AND voters.id = %s", (int(filters["voter"]),)))
-            return f
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute("""
         SELECT dog1_id as dog1, dog2_id as dog2, result, submission_time, voter_id
         FROM votes LEFT JOIN voters ON (votes.voter_id = voters.id) WHERE 1 = 1 """
-                       + filter_statement(filters)
+                       + filter_statement(conn, filters)
                        + """ ORDER BY random();""")
 
         results = cursor.fetchall()
@@ -261,7 +262,7 @@ def get_victory_graph(conn, filters):
         margin_v_to_u = matchups.get_edge_data(v, u)["margin"]
 
         # u->v has higher win margin than v->u, keep lower margin
-        if margin_u_to_v < margin_v_to_u:
+        if margin_u_to_v <= margin_v_to_u:
             edges_to_remove.append((u, v))
 
     matchups.remove_edges_from(edges_to_remove)

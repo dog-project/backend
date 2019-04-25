@@ -7,7 +7,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from util.get_pool import get_connection
-from xranking import get_victory_graph, get_votes
+from xranking import get_victory_graph, get_votes, filter_statement
 
 
 def main(args):
@@ -21,8 +21,10 @@ def main(args):
         "age_min": args.age_min,
         "age_max": args.age_max,
         "first_n": args.first_n,
-        "ignore_dogs": args.ignore_dogs
+        "ignore_dogs": args.ignore_dogs,
+        "voter": None
     }
+
 
     ret = get_number_of_intransitive_users(conn, filters)
     print(ret)
@@ -33,7 +35,10 @@ def get_number_of_intransitive_users(conn, filters):
     with conn.cursor() as cursor:
         cursor.execute(
             """SELECT voters.id
-               FROM voters;""")
+               FROM voters
+               WHERE 1 = 1"""
+            + filter_statement(conn, filters)
+            + ";")
         voters = [row[0] for row in cursor]
     count_intransitive = 0
     voters_with_no_votes = 0
