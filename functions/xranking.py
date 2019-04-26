@@ -32,29 +32,32 @@ def main(credentials, ranking_method, output_format, flatten_ties, filters):
     print(format_rank(rank, output_format))
 
 
+def filter_statement(conn, filters):
+    with conn.cursor() as cursor:
+        f = ""
+        if filters["education"]:
+            f += bytes.decode(cursor.mogrify("AND voters.education = %s", (filters["education"],)))
+        if filters["location"]:
+            f += bytes.decode(cursor.mogrify("AND voters.location = %s", (filters["location"],)))
+        if filters["gender"]:
+            f += bytes.decode(cursor.mogrify("AND voters.gender_identity = %s", (filters["gender"],)))
+        if filters["age_min"]:
+            f += bytes.decode(cursor.mogrify("AND voters.age >= %s", (filters["age_min"],)))
+        if filters["age_max"]:
+            f += bytes.decode(cursor.mogrify("AND voters.age <= %s", (filters["age_max"],)))
+        if filters["voter"]:
+            f += bytes.decode(cursor.mogrify("AND voters.id = %s", (int(filters["voter"]),)))
+        return f
+
 def get_votes(conn, filters):
     """Returns a list of each vote, as an array of dictionaries of shape {"dog1":…, "dog2":…, "result":…} """
 
-    def filter_statement(filters):
-        with conn.cursor() as cursor:
-            f = ""
-            if filters["education"]:
-                f += bytes.decode(cursor.mogrify("AND voters.education = %s", (filters["education"],)))
-            if filters["location"]:
-                f += bytes.decode(cursor.mogrify("AND voters.location = %s", (filters["location"],)))
-            if filters["gender"]:
-                f += bytes.decode(cursor.mogrify("AND voters.gender_identity = %s", (filters["gender"],)))
-            if filters["age_min"]:
-                f += bytes.decode(cursor.mogrify("AND voters.age >= %s", (filters["age_min"],)))
-            if filters["age_max"]:
-                f += bytes.decode(cursor.mogrify("AND voters.age <= %s", (filters["age_max"],)))
-            return f
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute("""
         SELECT dog1_id as dog1, dog2_id as dog2, result, submission_time, voter_id
         FROM votes LEFT JOIN voters ON (votes.voter_id = voters.id) WHERE 1 = 1 """
-                       + filter_statement(filters)
+                       + filter_statement(conn, filters)
                        + """ ORDER BY random();""")
 
         results = cursor.fetchall()
@@ -193,14 +196,16 @@ def rank_function(ranking_method, filters):
 
 def get_matchups(conn, filters):
     results = get_votes(conn, filters)
-    ids = {result["dog1"] for result in results}
+    dogs = {result["dog1"] for result in results} | {result["dog2"] for result in results}
     matchups = {}
-    for dog1 in ids:
-        matchups[dog1] = {}
-        for dog2 in ids:
+    for dog in dogs:
+        matchups[dog] = {}
+    for dog1 in dogs:
+        for dog2 in dogs:
             if dog1 == dog2:
                 continue
             matchups[dog1][dog2] = {"wins": 0, "losses": 0, "ties": 0}
+            matchups[dog2][dog1] = {"wins": 0, "losses": 0, "ties": 0}
 
     for vote in results:
         dog1 = vote["dog1"]
@@ -228,18 +233,22 @@ def get_matchup_graph(conn, filters):
     for dog1 in matchups:
         for dog2 in matchups[dog1]:
             dog1to2 = matchups[dog1][dog2]
-            g.add_edge(dog1, dog2,
-                       wins=dog1to2["wins"],
-                       losses=dog1to2["losses"],
-                       ties=dog1to2["ties"],
-                       margin=dog1to2["wins"] / (sum(dog1to2.values())))
+            total_votes_dog1to2 = sum(dog1to2.values())
+            if total_votes_dog1to2 != 0:
+                g.add_edge(dog1, dog2,
+                           wins=dog1to2["wins"],
+                           losses=dog1to2["losses"],
+                           ties=dog1to2["ties"],
+                           margin=dog1to2["wins"] / total_votes_dog1to2)
 
             dog2to1 = matchups[dog2][dog1]
-            g.add_edge(dog2, dog1,
-                       wins=dog2to1["wins"],
-                       losses=dog2to1["losses"],
-                       ties=dog2to1["ties"],
-                       margin=dog2to1["wins"] / (sum(dog2to1.values())))
+            total_votes_dog2to1 = sum(dog2to1.values())
+            if total_votes_dog2to1 != 0:
+                g.add_edge(dog2, dog1,
+                           wins=dog2to1["wins"],
+                           losses=dog2to1["losses"],
+                           ties=dog2to1["ties"],
+                           margin=dog2to1["wins"] / total_votes_dog2to1)
 
     return g
 
@@ -253,7 +262,7 @@ def get_victory_graph(conn, filters):
         margin_v_to_u = matchups.get_edge_data(v, u)["margin"]
 
         # u->v has higher win margin than v->u, keep lower margin
-        if margin_u_to_v < margin_v_to_u:
+        if margin_u_to_v <= margin_v_to_u:
             edges_to_remove.append((u, v))
 
     matchups.remove_edges_from(edges_to_remove)
@@ -281,6 +290,7 @@ if __name__ == '__main__':
     parser.add_argument("--gender")
     parser.add_argument("--age_min", type=int)
     parser.add_argument("--age_max", type=int)
+    parser.add_argument("--voter", type=int)
     parser.add_argument("--first_n", type=int)
     parser.add_argument("--ignore_dogs", nargs="*")
     args = parser.parse_args()
@@ -293,6 +303,7 @@ if __name__ == '__main__':
         "age_max": args.age_max,
         "first_n": args.first_n,
         "ignore_dogs": args.ignore_dogs,
+        "voter": args.voter
     }
 
     main(args.credentials, args.method, args.output_format, args.flatten_ties, filters)
