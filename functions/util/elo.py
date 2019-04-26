@@ -38,4 +38,4 @@ def compute_elo(results):
         elo[id1] = rank1 + delta
         elo[id2] = rank2 - delta
 
-    return sorted([[id, elo_score] for id, elo_score in elo.items()], key=lambda r: r[1], reverse=True)
+    return sorted([(id, elo_score) for id, elo_score in elo.items()], key=lambda r: r[1], reverse=True)
