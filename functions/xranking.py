@@ -37,7 +37,7 @@ def get_votes(conn, filters):
 
     def filter_statement(filters):
         with conn.cursor() as cursor:
-            def mogrify(string, arg):
+            def mogrify(string, args):
                 return bytes.decode(cursor.mogrify(string, args))
 
             f = ""
@@ -55,13 +55,13 @@ def get_votes(conn, filters):
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(
-            """
+            f"""
             SELECT dog1_id as dog1, dog2_id as dog2, result, submission_time, voter_id
             FROM votes LEFT JOIN voters ON (votes.voter_id = voters.id) WHERE 1 = 1
              AND votes.submission_time >= make_date(2019, 4, 3)
-             AND votes.submission_time <= make_date(2019, 4, 22) """
-            + filter_statement(filters)
-            + """ ORDER BY random();""")
+             AND votes.submission_time <= make_date(2019, 4, 22) 
+             {filter_statement(filters)}
+             ORDER BY random();""")
 
         results = cursor.fetchall()
 
