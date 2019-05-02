@@ -1,3 +1,4 @@
+pygraphviz
 psycopg2-binary
 jsonschema
 pytest

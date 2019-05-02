@@ -3,26 +3,13 @@ from collections import defaultdict
 from util.get_pool import get_connection
 from xranking import get_victory_graph
 import networkx as nx
+import json
+import pygraphviz as pgv
 
-conn = get_connection({
-    "host": "HOST",
-    "user": "postgres",
-    "password": "PASSWORD",
-    "dbname": "postgres"
-})
+with open('../../credentials.json') as creds:
+    conn = get_connection(json.load(creds))
 
 matchups = get_victory_graph(conn, defaultdict(bool))
-#
-# matchups = nx.DiGraph()
-# matchups.add_nodes_from([1, 2, 3, 4])
-# matchups.add_edges_from([(1, 2),
-#                          (1, 3),
-#                          (1, 4),
-#                          (2, 4),
-#                          (2, 3),
-#                          (3, 4),
-#
-#                          ])
 
 win_edges = sorted([edge for edge in matchups.edges],
                    key=lambda x: matchups.get_edge_data(x[0], x[1])["margin"],
@@ -49,11 +36,9 @@ for (u, v) in e:
 
 new_graph.remove_edges_from(to_remove)
 
-
-import pygraphviz as pgv
-
 G = pgv.AGraph(directed=True)
 G.add_nodes_from(matchups.nodes)
+G.node_attr['shape'] = 'square'
 G.add_edges_from(new_graph.edges)
 
 G.layout(prog='dot')
