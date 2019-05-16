@@ -7,7 +7,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from util.get_pool import get_connection
-from xranking import get_victory_graph, get_votes, filter_statement
+from xranking import get_victory_graph, get_votes, filter_statement, get_matchup_graph
 
 
 def main(args):
@@ -25,10 +25,9 @@ def main(args):
         "voter": None
     }
 
-
-    ret = get_number_of_intransitive_users(conn, filters)
-    print(ret)
-    return ret
+    out = get_number_of_intransitive_users(conn, filters)
+    print(out)
+    return out
 
 
 def get_number_of_intransitive_users(conn, filters):
@@ -36,24 +35,35 @@ def get_number_of_intransitive_users(conn, filters):
         cursor.execute(
             """SELECT voters.id
                FROM voters
-               WHERE 1 = 1"""
-            + filter_statement(conn, filters)
-            + ";")
+               WHERE 1 = 1 
+               AND voters.creation_time >= make_date(2019, 4, 3)
+               AND voters.creation_time <= make_date(2019, 4, 22) """
+            + filter_statement(conn, filters))
         voters = [row[0] for row in cursor]
+
     count_intransitive = 0
+    count_opportunity_intransitive = 0
     voters_with_no_votes = 0
     for voter in voters:
         filters["voter"] = voter
         if not get_votes(conn, filters):
             voters_with_no_votes += 1
             continue
-        cycles = nx.simple_cycles(get_victory_graph(conn, filters))
+        vg = get_victory_graph(conn, filters)
         try:
-            cycles.__next__() # If there exists a cycle this will not throw an error
+            nx.find_cycle(nx.to_undirected(vg))
+            count_opportunity_intransitive += 1
+        except:
+            pass
+
+        try:
+            nx.find_cycle(vg)
             count_intransitive += 1
         except:
             pass
-    return count_intransitive, len(voters), voters_with_no_votes
+
+    return count_intransitive, count_opportunity_intransitive, len(voters), voters_with_no_votes
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
