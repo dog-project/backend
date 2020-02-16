@@ -1,20 +1,20 @@
 CREATE TYPE primaries_race AS ENUM (
-	'Black'
-	'White'
-	'Hispanic/Latinx'
-	'Asian'
-	'Native Am.'
-	'Hawaiian/Pacific Isl.'
-	'Middle Eastern/North African'
-	'Other/Unknown'
+	'Black',
+	'White',
+	'Hispanic/Latinx',
+	'Asian',
+	'Native Am.',
+	'Hawaiian/Pacific Isl.',
+	'Middle Eastern/North African',
+	'Other/Unknown',
 	'Prefer not to say'
 );
 
 CREATE TYPE primaries_gender AS ENUM (
-	'Man'
-	'Woman'
-	'Nonbinary'
-	'Other'
+	'Man',
+	'Woman',
+	'Nonbinary',
+	'Other',
 	'Prefer not to say'
 );
 
@@ -27,71 +27,71 @@ CREATE TYPE primaries_education_level AS ENUM (
 );
 
 CREATE TYPE primaries_age AS ENUM (
-	'18-24'
-	'25-44'
-	'45-65'
-	'65+'
+	'18-24',
+	'25-44',
+	'45-65',
+	'65+',
 	'Prefer not to say'
 );
 
 CREATE TYPE primaries_political_party AS ENUM (
-	'Democrat'
-	'Republican'
-	'Independent'
-	'Other'
+	'Democrat',
+	'Republican',
+	'Independent',
+	'Other',
 	'Prefer not to say'
 );
 
 CREATE TYPE states AS ENUM (
-	'AL'
-	'AK'
-	'AZ'
-	'AR'
-	'CA'
-	'CO'
-	'CT'
-	'DE'
-	'FL'
-	'GA'
-	'HI'
-	'ID'
-	'IL'
-	'IN'
-	'IA'
-	'KS'
-	'KY'
-	'LA'
-	'ME'
-	'MD'
-	'MA'
-	'MI'
-	'MN'
-	'MS'
-	'MO'
-	'MT'
-	'NE'
-	'NV'
-	'NH'
-	'NJ'
-	'NM'
-	'NY'
-	'NC'
-	'ND'
-	'OH'
-	'OK'
-	'OR'
-	'PA'
-	'RI'
-	'SC'
-	'SD'
-	'TN'
-	'TX'
-	'UT'
-	'VT'
-	'VA'
-	'WA'
-	'WV'
-	'WI'
+	'AL',
+	'AK',
+	'AZ',
+	'AR',
+	'CA',
+	'CO',
+	'CT',
+	'DE',
+	'FL',
+	'GA',
+	'HI',
+	'ID',
+	'IL',
+	'IN',
+	'IA',
+	'KS',
+	'KY',
+	'LA',
+	'ME',
+	'MD',
+	'MA',
+	'MI',
+	'MN',
+	'MS',
+	'MO',
+	'MT',
+	'NE',
+	'NV',
+	'NH',
+	'NJ',
+	'NM',
+	'NY',
+	'NC',
+	'ND',
+	'OH',
+	'OK',
+	'OR',
+	'PA',
+	'RI',
+	'SC',
+	'SD',
+	'TN',
+	'TX',
+	'UT',
+	'VT',
+	'VA',
+	'WA',
+	'WV',
+	'WI',
 	'WY'
 );
 
