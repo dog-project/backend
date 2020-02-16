@@ -513,7 +513,7 @@ def _submit(data, conn):
 
     cursor.execute("""INSERT INTO primaries_voters
     (id, state, age_above_18, eligible, race, gender, education, age, party, lgbtq) 
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+    VALUES (%s, %s, %s, %s, %s::primaries_race[], %s, %s, %s, %s, %s)""",
     (voter_id, data["state"], data["age_above_18"], data["eligible"], data["race"], data["gender"], data["education"], data["age"], data["party"], data["lgbtq"]))
 
     cursor.execute("""INSERT INTO primaries_ballot 
