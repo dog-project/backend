@@ -517,8 +517,8 @@ def _submit(data, conn):
     (voter_id, data["state"], data["age_above_18"], data["eligible"], data["race"], data["gender"], data["education"], data["age"], data["party"], data["lgbtq"]))
 
     cursor.execute("""INSERT INTO ballot 
-    (voter, top_candidate, tier1, tier2, tier3, tier4, tier5, tier6) 
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-    (voter_id, data["top_candidate"], data["tier1"], data["tier2"], data["tier3"], data["tier4"], data["tier5"], data["tier6"]))
+    (voter, top_candidate, tier1, tier2, tier3, tier4, tier5, tier6, unranked) 
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+    (voter_id, data["top_candidate"], data["tier1"], data["tier2"], data["tier3"], data["tier4"], data["tier5"], data["tier6"], data["unranked"]))
 
     return None
