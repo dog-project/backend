@@ -507,7 +507,8 @@ def submit(request_json, conn):
     return _submit(request_json, conn)
 
 def _submit(data, conn):
-    voter_id = str(uuid.uuid4())
+    psycopg2.extras.register_uuid()
+    voter_id = uuid.uuid4()
 
     cursor = conn.cursor()
 
