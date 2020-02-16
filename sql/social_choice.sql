@@ -97,11 +97,11 @@ CREATE TYPE states AS ENUM (
 
 CREATE TABLE primaries_voters
 (
-	id					SERIAL PRIMARY KEY,
+	id			uuid 		 PRIMARY KEY,
     state 			text		NOT NULL,
     age_above_18	BOOLEAN 		NOT NULL 		DEFAULT FALSE,
     eligible 		BOOLEAN			NOT NULL 		DEFAULT FALSE,
-    race			primaries_race		DEFAULT NULL,
+    race			primaries_race[]		DEFAULT NULL,
     gender			primaries_gender		DEFAULT NULL,
     education 		primaries_education_level		DEFAULT NULL,
     age				primaries_age		DEFAULT NULL, 
@@ -112,7 +112,8 @@ CREATE TABLE primaries_voters
 CREATE TABLE primaries_ballot
 (
 	id 			SERIAL PRIMARY KEY,
-    voter			INT 			NOT NULL,
+	submission_time TIMESTAMP NOT NULL DEFAULT NOW(),
+    voter_id        uuid  REFERENCES primaries_voters (id),
     top_candidate 	text 	NOT NULL,
     tier1			text[],
     tier2			text[],
