@@ -23,7 +23,7 @@ CREATE TYPE primaries_education_level AS ENUM (
 	'HS diploma/GED',
 	'Some College',
 	'College or Beyond',
-	'Prefer not to say',
+	'Prefer not to say'
 );
 
 CREATE TYPE primaries_age AS ENUM (
@@ -95,9 +95,9 @@ CREATE TYPE states AS ENUM (
 	'WY'
 );
 
-CREATE TABLE voters
+CREATE TABLE primaries_voters
 (
-	id				INT				PRIMARY KEY		AUTO_INCREMENT,
+	id					SERIAL PRIMARY KEY,
     state 			text		NOT NULL,
     age_above_18	BOOLEAN 		NOT NULL 		DEFAULT FALSE,
     eligible 		BOOLEAN			NOT NULL 		DEFAULT FALSE,
@@ -109,9 +109,9 @@ CREATE TABLE voters
     lgbtq			BOOLEAN			DEFAULT NULL
 );
 
-CREATE TABLE ballot
+CREATE TABLE primaries_ballot
 (
-	id				INT 			PRIMARY KEY 	AUTO_INCREMENT,
+	id 			SERIAL PRIMARY KEY,
     voter			INT 			NOT NULL,
     top_candidate 	text 	NOT NULL,
     tier1			text[],
@@ -121,6 +121,6 @@ CREATE TABLE ballot
     tier5			text[],
     tier6			text[],
     unranked			text[]
-)
+);
 
 
