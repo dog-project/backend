@@ -511,12 +511,12 @@ def _submit(data, conn):
 
     cursor = conn.cursor()
 
-    cursor.execute("""INSERT INTO voters
+    cursor.execute("""INSERT INTO primaries_voters
     (id, state, age_above_18, eligible, race, gender, education, age, party, lgbtq) 
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
     (voter_id, data["state"], data["age_above_18"], data["eligible"], data["race"], data["gender"], data["education"], data["age"], data["party"], data["lgbtq"]))
 
-    cursor.execute("""INSERT INTO ballot 
+    cursor.execute("""INSERT INTO primaries_ballot 
     (voter, top_candidate, tier1, tier2, tier3, tier4, tier5, tier6, unranked) 
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
     (voter_id, data["top_candidate"], data["tier1"], data["tier2"], data["tier3"], data["tier4"], data["tier5"], data["tier6"], data["unranked"]))
