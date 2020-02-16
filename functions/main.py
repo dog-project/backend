@@ -507,7 +507,7 @@ def submit(request_json, conn):
     return _submit(request_json, conn)
 
 def _submit(data, conn):
-    voter_id = uuid.uuid4()
+    voter_id = str(uuid.uuid4())
 
     cursor = conn.cursor()
 
