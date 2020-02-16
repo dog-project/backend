@@ -7,5 +7,6 @@
 ./deploy.sh register_voter &
 ./deploy.sh get_votes &
 ./deploy.sh list_dogs &
+./deploy.sh submit &
 
 echo "Running deployment, this may take a sec."
