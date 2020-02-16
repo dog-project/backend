@@ -494,7 +494,8 @@ def _get_elo_ranking(conn):
             "tier3": {"type": "array", "items": {"type":  "string"}},
             "tier4": {"type": "array", "items": {"type":  "string"}},
             "tier5": {"type": "array", "items": {"type":  "string"}},
-            "tier6": {"type": "array", "items": {"type":  "string"}}
+            "tier6": {"type": "array", "items": {"type":  "string"}},
+            "unranked": {"type": "array", "items": {"type":  "string"}}
         },
         "additionalProperties": False,
         "minProperties": 10
