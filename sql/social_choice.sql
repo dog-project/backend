@@ -121,6 +121,8 @@ CREATE TABLE primaries_ballot
     tier4			text[],
     tier5			text[],
     tier6			text[],
+    tier7			text[],
+    tier8			text[],
     unranked			text[]
 );
 
