@@ -495,6 +495,8 @@ def _get_elo_ranking(conn):
             "tier4": {"type": "array", "items": {"type":  "string"}},
             "tier5": {"type": "array", "items": {"type":  "string"}},
             "tier6": {"type": "array", "items": {"type":  "string"}},
+            "tier7": {"type": "array", "items": {"type":  "string"}},
+            "tier8": {"type": "array", "items": {"type":  "string"}},
             "unranked": {"type": "array", "items": {"type":  "string"}}
         },
         "additionalProperties": False,
@@ -518,8 +520,8 @@ def _submit(data, conn):
     (voter_id, data["state"], data["age_above_18"], data["eligible"], data["race"], data["gender"], data["education"], data["age"], data["party"], data["lgbtq"]))
 
     cursor.execute("""INSERT INTO primaries_ballot 
-    (voter_id, top_candidate, tier1, tier2, tier3, tier4, tier5, tier6, unranked) 
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-    (voter_id, data["top_candidate"], data["tier1"], data["tier2"], data["tier3"], data["tier4"], data["tier5"], data["tier6"], data["unranked"]))
+    (voter_id, top_candidate, tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked) 
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+    (voter_id, data["top_candidate"], data["tier1"], data["tier2"], data["tier3"], data["tier4"], data["tier5"], data["tier6"], data["tier7"], data["tier8"] data["unranked"]))
 
     return None
