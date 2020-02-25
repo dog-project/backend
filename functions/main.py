@@ -522,6 +522,6 @@ def _submit(data, conn):
     cursor.execute("""INSERT INTO primaries_ballot 
     (voter_id, top_candidate, tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked) 
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-    (voter_id, data["top_candidate"], data["tier1"], data["tier2"], data["tier3"], data["tier4"], data["tier5"], data["tier6"], data["tier7"], data["tier8"] data["unranked"]))
+    (voter_id, data["top_candidate"], data["tier1"], data["tier2"], data["tier3"], data["tier4"], data["tier5"], data["tier6"], data["tier7"], data["tier8"], data["unranked"]))
 
     return None
