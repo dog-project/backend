@@ -92,7 +92,9 @@ CREATE TYPE states AS ENUM (
 	'WA',
 	'WV',
 	'WI',
-	'WY'
+	'WY',
+	'District of Columbia',
+	'U.S. Territories'
 );
 
 CREATE TABLE primaries_voters
