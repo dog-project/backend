@@ -606,7 +606,9 @@ def _get_demographics(conn):
     cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
     for race, gender, education, age, party, lgbtq in cursor.fetchmany(total):
         if race == None:
-            race = {'Prefer not to say'}            
+            race = {'Prefer not to say'}    
+        else:
+            race = literal_eval(race)        
         if gender == None:
             gender = 'Prefer not to say'            
         if education == None:
@@ -617,7 +619,6 @@ def _get_demographics(conn):
             party = 'Prefer not to say'            
         if lgbtq == None:
             lgbtq = 'Prefer not to say'
-        race = literal_eval(race)
         for race_ident in race:
             race_demo[race_ident] += 1 / total
         gender_demo[gender] += 1 / total
