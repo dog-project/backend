@@ -594,12 +594,12 @@ def get_demographics(conn):
 
 def _get_demographics(conn):
     cursor = conn.cursor()
-    race = {[('Black', 0), ('White', 0), ('Hispanic/Latinx', 0), ('Asian', 0), ('Native Am.', 0), ('Hawaiian/Pacific Isl.', 0), ('Middle Eastern/North African', 0), ('Other/Unknown', 0), ('Prefer not to say', 0)]}
-    gender = {[('Man', 0), ('Woman', 0), ('Nonbinary', 0), ('Other', 0), ('Prefer not to say', 0)]}
-    education = {[('Some high school', 0), ('HS diploma/GED', 0), ('Some College', 0), ('College or Beyond', 0), ('Prefer not to say', 0)]}
-    age = {[('18-24', 0), ('25-44', 0), ('45-66', 0), ('65+', 0), ('Prefer not to say', 0)]}
-    party = {[('Democrat', 0), ('Republican', 0), ('Independent', 0), ('Other', 0), ('Prefer not to say', 0)]}
-    lgbtq = {[('true', 0), ('false', 0), ('Prefer not to say', 0)]}
+    race = {'Black': 0, 'White' : 0, 'Hispanic/Latinx' : 0, 'Asian' : 0, 'Native Am.' : 0, 'Hawaiian/Pacific Isl.' : 0, 'Middle Eastern/North African' : 0, 'Other/Unknown' : 0, 'Prefer not to say' : 0}
+    gender = {'Man' : 0, 'Woman' : 0, 'Nonbinary' : 0, 'Other' : 0, 'Prefer not to say' : 0}
+    education = {'Some high school' : 0, 'HS diploma/GED' : 0, 'Some College' : 0, 'College or Beyond' : 0, 'Prefer not to say' : 0}
+    age = {'18-24' : 0, '25-44' : 0, '45-66' : 0, '65+' : 0, 'Prefer not to say' : 0}
+    party = {'Democrat' : 0, 'Republican' : 0, 'Independent' : 0, 'Other' : 0, 'Prefer not to say' : 0}
+    lgbtq = {'true' : 0, 'false' : 0, 'Prefer not to say' : 0}
     out = {race, gender, education, age, party, lgbtq}
     total = cursor.execute("""SELECT COUNT(*) FROM primaries_ballot WHERE id <= 480""").fetchall
     ids = cursor.execute("""SELECT voter_id FROM primaries_ballot WHERE id <= 480""").fetchall
