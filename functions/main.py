@@ -594,12 +594,12 @@ def get_demographics(conn):
 
 def _get_demographics(conn):
     cursor = conn.cursor()
-    race = {'Black': 0, 'White' : 0, 'Hispanic/Latinx' : 0, 'Asian' : 0, 'Native Am.' : 0, 'Hawaiian/Pacific Isl.' : 0, 'Middle Eastern/North African' : 0, 'Other/Unknown' : 0, 'Prefer not to say' : 0}
-    gender = {'Man' : 0, 'Woman' : 0, 'Nonbinary' : 0, 'Other' : 0, 'Prefer not to say' : 0}
-    education = {'Some high school' : 0, 'HS diploma/GED' : 0, 'Some College' : 0, 'College or Beyond' : 0, 'Prefer not to say' : 0}
-    age = {'18-24' : 0, '25-44' : 0, '45-66' : 0, '65+' : 0, 'Prefer not to say' : 0}
-    party = {'Democrat' : 0, 'Republican' : 0, 'Independent' : 0, 'Other' : 0, 'Prefer not to say' : 0}
-    lgbtq = {'true' : 0, 'false' : 0, 'Prefer not to say' : 0}
+    race_demo = {'Black': 0, 'White' : 0, 'Hispanic/Latinx' : 0, 'Asian' : 0, 'Native Am.' : 0, 'Hawaiian/Pacific Isl.' : 0, 'Middle Eastern/North African' : 0, 'Other/Unknown' : 0, 'Prefer not to say' : 0}
+    gender_demo = {'Man' : 0, 'Woman' : 0, 'Nonbinary' : 0, 'Other' : 0, 'Prefer not to say' : 0}
+    education_demo = {'Some high school' : 0, 'HS diploma/GED' : 0, 'Some College' : 0, 'College or Beyond' : 0, 'Prefer not to say' : 0}
+    age_demo = {'18-24' : 0, '25-44' : 0, '45-66' : 0, '65+' : 0, 'Prefer not to say' : 0}
+    party_demo = {'Democrat' : 0, 'Republican' : 0, 'Independent' : 0, 'Other' : 0, 'Prefer not to say' : 0}
+    lgbtq_demo = {'true' : 0, 'false' : 0, 'Prefer not to say' : 0}
     cursor.execute("""SELECT voter_id FROM primaries_ballot WHERE id <= 480""")
     total = cursor.rowcount
     cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
@@ -616,13 +616,13 @@ def _get_demographics(conn):
             party = 'Prefer not to say'            
         if lgbtq == None:
             lgbtq = 'Prefer not to say'
-        race[race] += 1 / total
-        gender[gender] += 1 / total
-        education[education] += 1 / total
-        age[age] += 1 / total
-        party[party] += 1 / total
-        lgbtq[lgbtq] += 1 / total
-    out = {'race' : race, 'gender' : gender, 'education': education, 'age': age, 'party': party, 'lgbtq': lgbtq}
+        race_demo[race] += 1 / total
+        gender_demo[gender] += 1 / total
+        education_demo[education] += 1 / total
+        age_demo[age] += 1 / total
+        party_demo[party] += 1 / total
+        lgbtq_demo[lgbtq] += 1 / total
+    out = {'race' : race_demo, 'gender' : gender_demo, 'education': education_demo, 'age': age_demo, 'party': party_demo, 'lgbtq': lgbtq_demo}
     return out
 
 
