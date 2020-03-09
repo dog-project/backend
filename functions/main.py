@@ -531,10 +531,11 @@ def _submit(data, conn):
         "type": "object",
         "properties": {
             "demographics": { "type": "array",
-            "items": {
-            "type": "array", 
                 "items": {
-                    "type": "string"
+                "type": "array", 
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         }
