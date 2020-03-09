@@ -602,7 +602,7 @@ def _get_demographics(conn):
     lgbtq = {'true' : 0, 'false' : 0, 'Prefer not to say' : 0}
     out = {'race' : race, 'gender' : gender, 'education': education, 'age': age, 'party': party, 'lgbtq': lgbtq}
     cursor.execute("""SELECT voter_id FROM primaries_ballot WHERE id <= 480""")
-    total = cursor.rowcount()
+    total = cursor.rowcount
     cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
     counted = 0
     while counted < total:
