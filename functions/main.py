@@ -600,18 +600,30 @@ def _get_demographics(conn):
     age = {'18-24' : 0, '25-44' : 0, '45-66' : 0, '65+' : 0, 'Prefer not to say' : 0}
     party = {'Democrat' : 0, 'Republican' : 0, 'Independent' : 0, 'Other' : 0, 'Prefer not to say' : 0}
     lgbtq = {'true' : 0, 'false' : 0, 'Prefer not to say' : 0}
-    out = {'race' : race, 'gender' : gender, 'education': education, 'age': age, 'party': party, 'lgbtq': lgbtq}
     cursor.execute("""SELECT voter_id FROM primaries_ballot WHERE id <= 480""")
     total = cursor.rowcount
     cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
-    counted = 0
-    while counted < total:
-        demos = cursor.fetchone()
-        for key, value in demos.items():
-            if value == None:
-                value = 'Prefer not to say'
-            out[key][value] += 1 / total
-        counted += 1
+    for voter in cursor.fetchmany(total):
+        for race, gender, education, age, party, lgbtq in voter:
+            if race == None:
+                race = 'Prefer not to say'            
+            if gender == None:
+                gender = 'Prefer not to say'            
+            if education == None:
+                education = 'Prefer not to say'            
+            if age == None:
+                age = 'Prefer not to say'            
+            if party == None:
+                party = 'Prefer not to say'            
+            if lgbtq == None:
+                lgbtq = 'Prefer not to say'
+            race[race] += 1 / total
+            gender[gender] += 1 / total
+            education[education] += 1 / total
+            age[age] += 1 / total
+            party[party] += 1 / total
+            lgbtq[lgbtq] += 1 / total
+    out = {'race' : race, 'gender' : gender, 'education': education, 'age': age, 'party': party, 'lgbtq': lgbtq}
     return out
 
 
