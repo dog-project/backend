@@ -547,7 +547,7 @@ def get_demographics(conn):
 def _get_demographics(conn):
     cursor = conn.cursor()
 
-    return cursor.select("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
+    return cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
 
 
 
