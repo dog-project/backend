@@ -213,3 +213,5 @@ dmypy.json
 
 .idea/**/misc.xml
 .idea/**/dog-back.iml
+
+.vscode/

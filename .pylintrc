@@ -1,0 +1,2 @@
+[MASTER]
+init-hook='import sys; sys.path.append("C:\Users\Filip\Documents\Programming\backend")'

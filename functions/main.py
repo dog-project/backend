@@ -525,3 +525,28 @@ def _submit(data, conn):
     (voter_id, data["top_candidate"], data["tier1"], data["tier2"], data["tier3"], data["tier4"], data["tier5"], data["tier6"], data["tier7"], data["tier8"], data["unranked"]))
 
     return None
+
+@cloudfunction(
+    out_schema={
+        "type": "object",
+        "properties": {
+            "demographics": { "type": "array",
+            "items":
+            "type": "array", 
+                "items": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+)
+def get_demographics(conn):
+    return _get_demographics(conn)
+
+def _get_demographics(conn):
+    cursor = conn.cursor()
+
+    return cursor.select("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
+
+
+
