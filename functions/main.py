@@ -530,12 +530,60 @@ def _submit(data, conn):
     out_schema={
         "type": "object",
         "properties": {
-            "demographics": { "type": "array",
-                "items": {
-                "type": "array", 
-                    "items": {
-                        "type": "string"
-                    }
+            "race": { "type": "object",
+                "properties": {
+                    'Black': {"type": "number"},
+                    'White': {"type": "number"},
+                    'Hispanic/Latinx': {"type": "number"},
+                    'Asian': {"type": "number"},
+                    'Native Am.': {"type": "number"},
+                    'Hawaiian/Pacific Isl.': {"type": "number"},
+                    'Middle Eastern/North African': {"type": "number"},
+                    'Other/Unknown': {"type": "number"},
+                    'Prefer not to say': {"type": "number"} 
+                }
+            },
+            "gender": { "type": "object",
+                "properties": {
+                    'Man': {"type": "number"},
+                    'Woman': {"type": "number"},
+                    'Nonbinary': {"type": "number"},
+                    'Other': {"type": "number"},
+                    'Prefer not to say': {"type": "number"},
+                }
+            },
+            "education": { "type": "object",
+                "properties": {
+                    'Some high school': {"type": "number"},
+                    'HS diploma/GED': {"type": "number"},
+                    'Some College': {"type": "number"},
+                    'College or Beyond': {"type": "number"},
+                    'Prefer not to say': {"type": "number"},
+                }
+            },
+            "age": { "type": "object",
+                "properties": {
+                    '18-24': {"type": "number"},
+                    '25-44': {"type": "number"},
+                    '45-66': {"type": "number"},
+                    '65+': {"type": "number"},
+                    'Prefer not to say': {"type": "number"},
+                }
+            },
+            "party": { "type": "object",
+                "properties": {
+                    'Democrat': {"type": "number"},
+                    'Republican': {"type": "number"},
+                    'Independent': {"type": "number"},
+                    'Other': {"type": "number"},
+                    'Prefer not to say': {"type": "number"},
+                }
+            },
+            "lgbtq": {
+                "properties": {
+                    'True': {"type": "number"},
+                    'False': {"type": "number"},
+                    'Prefer not to say': {"type": "number"},
                 }
             }
         }
@@ -546,8 +594,22 @@ def get_demographics(conn):
 
 def _get_demographics(conn):
     cursor = conn.cursor()
-
-    return cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
+    race = {[('Black', 0), ('White', 0), ('Hispanic/Latinx', 0), ('Asian', 0), ('Native Am.', 0), ('Hawaiian/Pacific Isl.', 0), ('Middle Eastern/North African', 0), ('Other/Unknown', 0), ('Prefer not to say', 0)]}
+    gender = {[('Man', 0), ('Woman', 0), ('Nonbinary', 0), ('Other', 0), ('Prefer not to say', 0)]}
+    education = {[('Some high school', 0), ('HS diploma/GED', 0), ('Some College', 0), ('College or Beyond', 0), ('Prefer not to say', 0)]}
+    age = {[('18-24', 0), ('25-44', 0), ('45-66', 0), ('65+', 0), ('Prefer not to say', 0)]}
+    party = {[('Democrat', 0), ('Republican', 0), ('Independent', 0), ('Other', 0), ('Prefer not to say', 0)]}
+    lgbtq = {[('true', 0), ('false', 0), ('Prefer not to say', 0)]}
+    out = {race, gender, education, age, party, lgbtq}
+    total = cursor.execute("""SELECT COUNT(*) FROM primaries_ballot WHERE id <= 480""").fetchall
+    ids = cursor.execute("""SELECT voter_id FROM primaries_ballot WHERE id <= 480""").fetchall
+    for voter_id in ids:
+        demos = cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters WHERE id = %s""", (voter_id)).fetchone
+        for key, value in demos.items():
+            if value == None:
+                value = 'Prefer not to say'
+            out[key][value] += 1 / total
+    return out
 
 
 
