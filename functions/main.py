@@ -604,7 +604,7 @@ def _get_demographics(conn):
     total = cursor.rowcount
     cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
     for race, gender, education, age, party, lgbtq in cursor.fetchmany(total):
-        if race == None:
+        if race == "{}":
             race = {'Prefer not to say'}    
         else:
             race = race.replace("\"", "").replace("{", "").replace("}", "").split(',')
