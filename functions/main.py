@@ -531,7 +531,7 @@ def _submit(data, conn):
         "type": "object",
         "properties": {
             "demographics": { "type": "array",
-            "items":
+            "items": {
             "type": "array", 
                 "items": {
                     "type": "string"
