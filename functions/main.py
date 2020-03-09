@@ -565,7 +565,7 @@ def _submit(data, conn):
                 "properties": {
                     '18-24': {"type": "number"},
                     '25-44': {"type": "number"},
-                    '45-66': {"type": "number"},
+                    '45-65': {"type": "number"},
                     '65+': {"type": "number"},
                     'Prefer not to say': {"type": "number"},
                 }
@@ -597,7 +597,7 @@ def _get_demographics(conn):
     race_demo = {'Black': 0, 'White' : 0, 'Hispanic/Latinx' : 0, 'Asian' : 0, 'Native Am.' : 0, 'Hawaiian/Pacific Isl.' : 0, 'Middle Eastern/North African' : 0, 'Other/Unknown' : 0, 'Prefer not to say' : 0}
     gender_demo = {'Man' : 0, 'Woman' : 0, 'Nonbinary' : 0, 'Other' : 0, 'Prefer not to say' : 0}
     education_demo = {'Some high school' : 0, 'HS diploma/GED' : 0, 'Some College' : 0, 'College or Beyond' : 0, 'Prefer not to say' : 0}
-    age_demo = {'18-24' : 0, '25-44' : 0, '45-66' : 0, '65+' : 0, 'Prefer not to say' : 0}
+    age_demo = {'18-24' : 0, '25-44' : 0, '45-65' : 0, '65+' : 0, 'Prefer not to say' : 0}
     party_demo = {'Democrat' : 0, 'Republican' : 0, 'Independent' : 0, 'Other' : 0, 'Prefer not to say' : 0}
     lgbtq_demo = {'true' : 0, 'false' : 0, 'Prefer not to say' : 0}
     cursor.execute("""SELECT voter_id FROM primaries_ballot WHERE id <= 480""")
