@@ -608,6 +608,7 @@ def _get_demographics(conn):
         if race == None:
             race = {'Prefer not to say'}    
         else:
+            race = race.replace("\"", "")
             race = literal_eval(race)        
         if gender == None:
             gender = 'Prefer not to say'            
