@@ -2,6 +2,7 @@ import traceback
 import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from ast import literal_eval
 
 from util.cloudfunction import cloudfunction
 from util.elo import compute_elo
@@ -616,6 +617,7 @@ def _get_demographics(conn):
             party = 'Prefer not to say'            
         if lgbtq == None:
             lgbtq = 'Prefer not to say'
+        race = literal_eval(race)
         for race_ident in race:
             race_demo[race_ident] += 1 / total
         gender_demo[gender] += 1 / total
