@@ -603,26 +603,25 @@ def _get_demographics(conn):
     cursor.execute("""SELECT voter_id FROM primaries_ballot WHERE id <= 480""")
     total = cursor.rowcount
     cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
-    for voter in cursor.fetchmany(total):
-        for race, gender, education, age, party, lgbtq in voter:
-            if race == None:
-                race = 'Prefer not to say'            
-            if gender == None:
-                gender = 'Prefer not to say'            
-            if education == None:
-                education = 'Prefer not to say'            
-            if age == None:
-                age = 'Prefer not to say'            
-            if party == None:
-                party = 'Prefer not to say'            
-            if lgbtq == None:
-                lgbtq = 'Prefer not to say'
-            race[race] += 1 / total
-            gender[gender] += 1 / total
-            education[education] += 1 / total
-            age[age] += 1 / total
-            party[party] += 1 / total
-            lgbtq[lgbtq] += 1 / total
+    for race, gender, education, age, party, lgbtq in cursor.fetchmany(total):
+        if race == None:
+            race = 'Prefer not to say'            
+        if gender == None:
+            gender = 'Prefer not to say'            
+        if education == None:
+            education = 'Prefer not to say'            
+        if age == None:
+            age = 'Prefer not to say'            
+        if party == None:
+            party = 'Prefer not to say'            
+        if lgbtq == None:
+            lgbtq = 'Prefer not to say'
+        race[race] += 1 / total
+        gender[gender] += 1 / total
+        education[education] += 1 / total
+        age[age] += 1 / total
+        party[party] += 1 / total
+        lgbtq[lgbtq] += 1 / total
     out = {'race' : race, 'gender' : gender, 'education': education, 'age': age, 'party': party, 'lgbtq': lgbtq}
     return out
 
