@@ -601,14 +601,17 @@ def _get_demographics(conn):
     party = {'Democrat' : 0, 'Republican' : 0, 'Independent' : 0, 'Other' : 0, 'Prefer not to say' : 0}
     lgbtq = {'true' : 0, 'false' : 0, 'Prefer not to say' : 0}
     out = {'race' : race, 'gender' : gender, 'education': education, 'age': age, 'party': party, 'lgbtq': lgbtq}
-    total = cursor.execute("""SELECT COUNT(*) FROM primaries_ballot WHERE id <= 480""").fetchall()
-    ids = cursor.execute("""SELECT voter_id FROM primaries_ballot WHERE id <= 480""").fetchall()
-    for voter_id in ids:
-        demos = cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters WHERE id = %s""", (voter_id)).fetchone()
+    cursor.execute("""SELECT voter_id FROM primaries_ballot WHERE id <= 480""")
+    total = cursor.rowcount()
+    cursor.execute("""SELECT race, gender, education, age, party, lgbtq FROM primaries_voters""")
+    counted = 0
+    while counted < total:
+        demos = cursor.fetchone()
         for key, value in demos.items():
             if value == None:
                 value = 'Prefer not to say'
             out[key][value] += 1 / total
+        counted += 1
     return out
 
 
