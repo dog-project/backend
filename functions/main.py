@@ -2,7 +2,6 @@ import traceback
 import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from ast import literal_eval
 
 from util.cloudfunction import cloudfunction
 from util.elo import compute_elo
@@ -608,8 +607,7 @@ def _get_demographics(conn):
         if race == None:
             race = {'Prefer not to say'}    
         else:
-            race = race.replace("\"", "")
-            race = literal_eval(race)        
+            race = race.replace("\"", "").replace("{", "").replace("}", "").split(',')
         if gender == None:
             gender = 'Prefer not to say'            
         if education == None:
