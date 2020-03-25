@@ -640,9 +640,9 @@ def _get_demographics(conn):
     )
 
 def get_pairwise(conn):
-    return _get_pairwise(request_json, conn)
+    return _get_pairwise(conn)
 
-def _get_pairwise(data, conn):
+def _get_pairwise(conn):
     cursor = conn.cursor()
 
     cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
