@@ -667,8 +667,9 @@ def _get_pairwise(conn):
         tiers.append(result["tier6"])
         tiers.append(result["tier7"])
         tiers.append(result["tier8"])
+        print(tiers)
         for i in range(6):
-            for j in range(i, 7):
+            for j in range(i + 1, 7):
                 for candidate1 in tiers[i]:
                     for candidate2 in tiers[j]:
                         matrix[candidate1][candidate2] = matrix[candidate1][candidate2] + 1
