@@ -631,7 +631,8 @@ def _get_demographics(conn):
 
 @cloudfunction(
     out_schema={
-        "type": "array",
+        "type": "array"
+    }
     )
 
 def get_pairwise(conn):
