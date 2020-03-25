@@ -663,14 +663,14 @@ def _get_pairwise(conn):
 
     for result in results:
         tiers = []
-        tiers[0] = result["tier1"]
-        tiers[1] = result["tier2"]
-        tiers[2] = result["tier3"]
-        tiers[3] = result["tier4"]
-        tiers[4] = result["tier5"]
-        tiers[5] = result["tier6"]
-        tiers[6] = result["tier7"]
-        tiers[7] = result["tier8"]
+        tiers.append(result["tier1"])
+        tiers.append(result["tier2"])
+        tiers.append(result["tier3"])
+        tiers.append(result["tier4"])
+        tiers.append(result["tier5"])
+        tiers.append(result["tier6"])
+        tiers.append(result["tier7"])
+        tiers.append(result["tier8"])
         for i in range(6):
             for j in range(1, 7):
                 for candidate1 in tiers[i]:
