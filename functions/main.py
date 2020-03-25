@@ -629,4 +629,52 @@ def _get_demographics(conn):
     return out
 
 
+@cloudfunction(
+    out_schema={
+        "type": "array",
+        "items": [
+            {"type": "array",
+             "items": [{"type": "number"}]
+             }
+        ]}
+    )
 
+def get_pairwise(conn):
+    return _get_pairwise(request_json, conn)
+
+def _get_pairwise(data, conn):
+    cursor = conn.cursor()
+
+    cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
+    from primaries_ballot WHERE submission_time <= '2020-03-03'::date""")
+
+    results = cursor.fetchall()
+
+    matrix = {
+        "Sanders": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Warren": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Biden": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Buttigieg": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Bloomberg": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Klobuchar": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Gabbard": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Steyer": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0}
+    }
+
+    for result in results:
+        tiers = []
+        tiers[0] = result["tier1"]
+        tiers[1] = result["tier2"]
+        tiers[2] = result["tier3"]
+        tiers[3] = result["tier4"]
+        tiers[4] = result["tier5"]
+        tiers[5] = result["tier6"]
+        tiers[6] = result["tier7"]
+        tiers[7] = result["tier8"]
+        for i in range(6):
+            for j in range(1, 7):
+                for candidate1 in tiers[i]:
+                    for candidate2 in tiers[j]:
+                        matrix[candidate1][candidate2] = matrix[candidate1][candidate2] + 1
+
+    return matrix
