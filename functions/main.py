@@ -643,12 +643,12 @@ def get_pairwise(conn):
     return _get_pairwise(conn)
 
 def _get_pairwise(conn):
-    cursor = conn.cursor()
 
-    cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
-    from primaries_ballot WHERE submission_time <= '2020-03-03'::date""")
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
+        from primaries_ballot WHERE submission_time <= '2020-03-03'::date""")
 
-    results = cursor.fetchall()
+        results = cursor.fetchall()
 
     matrix = {
         "Sanders": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
