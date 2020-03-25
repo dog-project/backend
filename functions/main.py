@@ -632,11 +632,6 @@ def _get_demographics(conn):
 @cloudfunction(
     out_schema={
         "type": "array",
-        "items": [
-            {"type": "array",
-             "items": [{"type": "number"}]
-             }
-        ]}
     )
 
 def get_pairwise(conn):
@@ -672,7 +667,7 @@ def _get_pairwise(conn):
         tiers.append(result["tier7"])
         tiers.append(result["tier8"])
         for i in range(6):
-            for j in range(1, 7):
+            for j in range(i, 7):
                 for candidate1 in tiers[i]:
                     for candidate2 in tiers[j]:
                         matrix[candidate1][candidate2] = matrix[candidate1][candidate2] + 1
