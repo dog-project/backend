@@ -689,7 +689,7 @@ def _get_pairwise(request_json, conn):
             "Steyer": {"type": "number"}
         },
         "additionalProperties": False,
-        "minProperties": 10
+        "minProperties": 8
     },
     out_schema={
         "type": "array"
