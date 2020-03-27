@@ -635,10 +635,10 @@ def _get_demographics(conn):
     }
     )
 
-def get_pairwise(request_json, conn):
-    return _get_pairwise(request_json, conn)
+def get_pairwise(conn):
+    return _get_pairwise(conn)
 
-def _get_pairwise(request_json, conn):
+def _get_pairwise(conn):
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
@@ -696,10 +696,10 @@ def _get_pairwise(request_json, conn):
     }
     )
 
-def get_normalized_pairwise(conn):
-    return _get_normalized_pairwise(conn)
+def get_normalized_pairwise(request_json, conn):
+    return _get_normalized_pairwise(request_json, conn)
 
-def _get_normalized_pairwise(conn):
+def _get_normalized_pairwise(request_json, conn):
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
