@@ -635,10 +635,10 @@ def _get_demographics(conn):
     }
     )
 
-def get_pairwise(conn):
-    return _get_pairwise(conn)
+def get_pairwise(request_json, conn):
+    return _get_pairwise(request_json, conn)
 
-def _get_pairwise(conn):
+def _get_pairwise(request_json, conn):
 
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
@@ -667,11 +667,89 @@ def _get_pairwise(conn):
         tiers.append(result["tier6"])
         tiers.append(result["tier7"])
         tiers.append(result["tier8"])
-        print(tiers)
         for i in range(6):
             for j in range(i + 1, 7):
                 for candidate1 in tiers[i]:
                     for candidate2 in tiers[j]:
                         matrix[candidate1][candidate2] = matrix[candidate1][candidate2] + 1
+
+    return matrix
+
+@cloudfunction(
+    in_schema={
+        "type": "object",
+        "properties": {
+            "Sanders": {"type": "number"},
+            "Warren": {"type": "number"},
+            "Biden": {"type": "number"},
+            "Buttigieg": {"type": "number"},
+            "Bloomberg": {"type": "number"},
+            "Klobuchar": {"type": "number"},
+            "Gabbard": {"type": "number"},
+            "Steyer": {"type": "number"}
+        },
+        "additionalProperties": False,
+        "minProperties": 10
+    },
+    out_schema={
+        "type": "array"
+    }
+    )
+
+def get_normalized_pairwise(conn):
+    return _get_normalized_pairwise(conn)
+
+def _get_normalized_pairwise(conn):
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
+        from primaries_ballot WHERE submission_time <= '2020-03-03'::date""")
+
+        results = cursor.fetchall()
+
+    top_candidate = {
+        "Sanders": 0,
+        "Warren": 0,
+        "Biden": 0,
+        "Buttigieg": 0,
+        "Bloomberg": 0,
+        "Klobuchar": 0,
+        "Gabbard": 0,
+        "Steyer": 0 
+    }
+
+    for result in results:
+        for candidate in result["tier1"]:
+            top_candidate[candidate] += 1
+
+    matrix = {
+        "Sanders": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Warren": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Biden": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Buttigieg": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Bloomberg": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Klobuchar": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Gabbard": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0},
+        "Steyer": {"Sanders": 0, "Warren": 0, "Biden": 0, "Buttigieg": 0, "Bloomberg": 0, "Klobuchar": 0, "Gabbard": 0, "Steyer": 0}
+    }
+
+    for result in results:
+        tiers = []
+        tiers.append(result["tier1"])
+        tiers.append(result["tier2"])
+        tiers.append(result["tier3"])
+        tiers.append(result["tier4"])
+        tiers.append(result["tier5"])
+        tiers.append(result["tier6"])
+        tiers.append(result["tier7"])
+        tiers.append(result["tier8"])
+        number_votes = 0
+        for candidate in tiers[0]:
+            number_votes += round(request_json[candidate] / top_candidate[candidate] * 1000)
+        for i in range(6):
+            for j in range(i + 1, 7):
+                for candidate1 in tiers[i]:
+                    for candidate2 in tiers[j]:
+                        matrix[candidate1][candidate2] = matrix[candidate1][candidate2] + number_votes
 
     return matrix
