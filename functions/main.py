@@ -776,7 +776,7 @@ def _get_normalized_pairwise(request_json, conn):
     )
 
 def get_normalized_plurality(request_json, conn):
-    return _get_normalized_pairwise(request_json, conn)
+    return _get_normalized_plurality(request_json, conn)
 
 def _get_normalized_plurality(request_json, conn):
 
