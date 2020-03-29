@@ -753,3 +753,69 @@ def _get_normalized_pairwise(request_json, conn):
                         matrix[candidate1][candidate2] = matrix[candidate1][candidate2] + number_votes
 
     return matrix
+
+@cloudfunction(
+    in_schema={
+        "type": "object",
+        "properties": {
+            "Sanders": {"type": "number"},
+            "Warren": {"type": "number"},
+            "Biden": {"type": "number"},
+            "Buttigieg": {"type": "number"},
+            "Bloomberg": {"type": "number"},
+            "Klobuchar": {"type": "number"},
+            "Gabbard": {"type": "number"},
+            "Steyer": {"type": "number"}
+        },
+        "additionalProperties": False,
+        "minProperties": 8
+    },
+    out_schema={
+        "type": "array"
+    }
+    )
+
+def get_normalized_plurality(request_json, conn):
+    return _get_normalized_pairwise(request_json, conn)
+
+def _get_normalized_plurality(request_json, conn):
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
+        from primaries_ballot WHERE submission_time <= '2020-03-03'::date""")
+
+        results = cursor.fetchall()
+
+    top_candidate = {
+        "Sanders": 0,
+        "Warren": 0,
+        "Biden": 0,
+        "Buttigieg": 0,
+        "Bloomberg": 0,
+        "Klobuchar": 0,
+        "Gabbard": 0,
+        "Steyer": 0 
+    }
+
+    for result in results:
+        for candidate in result["tier1"]:
+            top_candidate[candidate] += 1
+
+    votes = {
+        "Sanders": 0,
+        "Warren": 0,
+        "Biden": 0,
+        "Buttigieg": 0,
+        "Bloomberg": 0,
+        "Klobuchar": 0,
+        "Gabbard": 0,
+        "Steyer": 0 
+    }
+
+    for result in results:
+        tiers = []
+        number_votes = 0
+        for candidate in result["tier1"]:
+            votes[candidate] += round(request_json[candidate] / top_candidate[candidate] * 1000) * (1 / len(result["tier1"]))
+
+    return votes
