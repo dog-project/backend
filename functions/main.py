@@ -813,9 +813,90 @@ def _get_normalized_plurality(request_json, conn):
     }
 
     for result in results:
-        tiers = []
         number_votes = 0
         for candidate in result["tier1"]:
             votes[candidate] += round(request_json[candidate] / top_candidate[candidate] * 1000) * (1 / len(result["tier1"]))
 
     return votes
+     
+@cloudfunction(
+    in_schema={
+        "type": "object",
+        "properties": {
+            "Sanders": {"type": "number"},
+            "Warren": {"type": "number"},
+            "Biden": {"type": "number"},
+            "Buttigieg": {"type": "number"},
+            "Bloomberg": {"type": "number"},
+            "Klobuchar": {"type": "number"},
+            "Gabbard": {"type": "number"},
+            "Steyer": {"type": "number"}
+        },
+        "additionalProperties": False,
+        "minProperties": 8
+    },
+    out_schema={
+        "type": "array"
+    }
+    )
+
+def get_normalized_plurality_drops(request_json, conn):
+    return _get_normalized_plurality_drops(request_json, conn)
+
+def _get_normalized_plurality_drops(request_json, conn):
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
+        from primaries_ballot WHERE submission_time <= '2020-03-03'::date""")
+
+        results = cursor.fetchall()
+
+    top_candidate = {
+        "Sanders": 0,
+        "Warren": 0,
+        "Biden": 0,
+        "Buttigieg": 0,
+        "Bloomberg": 0,
+        "Klobuchar": 0,
+        "Gabbard": 0,
+        "Steyer": 0 
+    }
+
+    for result in results:
+        for candidate in result["tier1"]:
+            top_candidate[candidate] += 1
+
+    votes = {
+        "Sanders": 0,
+        "Warren": 0,
+        "Biden": 0,
+        "Buttigieg": 0,
+        "Bloomberg": 0,
+        "Klobuchar": 0,
+        "Gabbard": 0,
+        "Steyer": 0 
+    }
+
+    for result in results:
+        number_votes = 0
+        for candidate in result["tier1"]:
+            number_votes += round(request_json[candidate] / top_candidate[candidate] * 1000)
+
+        result["tier1"] = list(filter(lambda x: x != "Buttigieg" and x != "Klobuchar" and x != "Steyer", result["tier1"]))
+        result["tier2"] = list(filter(lambda x: x != "Buttigieg" and x != "Klobuchar" and x != "Steyer", result["tier2"]))
+        result["tier3"] = list(filter(lambda x: x != "Buttigieg" and x != "Klobuchar" and x != "Steyer", result["tier3"]))
+
+        if len(result["tier1"] > 0):
+            for candidate in result["tier1"]:
+                votes[candidate] = number_votes * (1 / len(result["tier1"]))
+        else if len(result["tier2"] > 0):
+            for candidate in result["tier2"]:
+                votes[candidate] = number_votes * (1 / len(result["tier2"]))
+        else if len(result["tier3"] > 0):
+            for candidate in result["tier3"]:
+                votes[candidate] = number_votes * (1 / len(result["tier3"]))
+        else if len(result["tier4"] > 0):
+            for candidate in result["tier4"]:
+                votes[candidate] = number_votes * (1 / len(result["tier4"]))
+    return votes
+    
