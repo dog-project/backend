@@ -886,13 +886,13 @@ def _get_normalized_plurality_drops(request_json, conn):
         result["tier2"] = list(filter(lambda x: x != "Buttigieg" and x != "Klobuchar" and x != "Steyer", result["tier2"]))
         result["tier3"] = list(filter(lambda x: x != "Buttigieg" and x != "Klobuchar" and x != "Steyer", result["tier3"]))
 
-        if len(result["tier1"] > 0):
+        if len(result["tier1"]) > 0:
             for candidate in result["tier1"]:
                 votes[candidate] = number_votes * (1 / len(result["tier1"]))
-        elif len(result["tier2"] > 0):
+        elif len(result["tier2"]) > 0:
             for candidate in result["tier2"]:
                 votes[candidate] = number_votes * (1 / len(result["tier2"]))
-        elif len(result["tier3"] > 0):
+        elif len(result["tier3"]) > 0:
             for candidate in result["tier3"]:
                 votes[candidate] = number_votes * (1 / len(result["tier3"]))
         else:
