@@ -957,6 +957,9 @@ def _get_normalized_instant_runoff(request_json, conn):
             "Steyer": 0 
         }
 
+        for candidate in removedCandidates:
+            top_candidate.pop(candidate)
+
         for result in results:
             if len(result["tier1"]) > 0:
                 for candidate in result["tier1"]:
@@ -993,6 +996,9 @@ def _get_normalized_instant_runoff(request_json, conn):
             "Gabbard": 0,
             "Steyer": 0 
         }
+
+        for candidate in removedCandidates:
+            votes.pop(candidate)
 
         for result in results:
             number_votes = 0
