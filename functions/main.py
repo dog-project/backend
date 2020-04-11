@@ -1041,6 +1041,7 @@ def _get_normalized_instant_runoff(request_json, conn):
         if (bool(_majorirty(votes))):
             return [votes, removedCandidates]
         else:
+            print([votes, removedCandidates])
             if len(removedCandidates) == 8:
                 return ["no winner"]
             else:
