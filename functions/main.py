@@ -1054,12 +1054,91 @@ def _get_normalized_instant_runoff(request_json, conn):
                 minVotes = min(votes.values())
                 minVotesCandidate = [key for key in votes if votes[key] == minVotes] 
                 removedCandidates.append(minVotesCandidate[0])
-            
-        
 
 def _majorirty(votes):
     neededForMajority = sum(votes.values()) / 2
     return {k:v for (k,v) in votes.items() if v >= neededForMajority}
 
+@cloudfunction(
+    out_schema={
+        "type": "array"
+    }
+    )
 
+def get_instant_runoff(request_json, conn):
+    return _get_instant_runoff(request_json, conn)
 
+def _get_instant_runoff(request_json, conn):
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute("""SELECT tier1, tier2, tier3, tier4, tier5, tier6, tier7, tier8, unranked 
+        from primaries_ballot WHERE submission_time <= '2020-03-03'::date""")
+
+        results = cursor.fetchall()
+
+    done = False
+    removedCandidates = []
+
+    while(not done):
+        for result in results:
+            result["tier1"] = list(filter(lambda x: not x in removedCandidates, result["tier1"]))
+            result["tier2"] = list(filter(lambda x: not x in removedCandidates, result["tier2"]))
+            result["tier3"] = list(filter(lambda x: not x in removedCandidates, result["tier3"]))
+            result["tier4"] = list(filter(lambda x: not x in removedCandidates, result["tier4"]))
+            result["tier5"] = list(filter(lambda x: not x in removedCandidates, result["tier5"]))
+            result["tier6"] = list(filter(lambda x: not x in removedCandidates, result["tier6"]))
+            result["tier7"] = list(filter(lambda x: not x in removedCandidates, result["tier7"]))
+            result["tier8"] = list(filter(lambda x: not x in removedCandidates, result["tier8"]))
+
+        votes = {
+            "Sanders": 0,
+            "Warren": 0,
+            "Biden": 0,
+            "Buttigieg": 0,
+            "Bloomberg": 0,
+            "Klobuchar": 0,
+            "Gabbard": 0,
+            "Steyer": 0 
+        }
+
+        for candidate in removedCandidates:
+            votes.pop(candidate)
+
+        for result in results:
+            number_votes = 0
+
+            if len(result["tier1"]) > 0:
+                for candidate in result["tier1"]:
+                    votes[candidate] += (1 / len(result["tier1"]))
+            elif len(result["tier2"]) > 0:
+                for candidate in result["tier2"]:
+                    votes[candidate] += (1 / len(result["tier2"]))
+            elif len(result["tier3"]) > 0:
+                for candidate in result["tier3"]:
+                    votes[candidate] += (1 / len(result["tier3"]))
+            elif len(result["tier4"]) > 0:
+                for candidate in result["tier4"]:
+                    votes[candidate] += (1 / len(result["tier4"]))
+            elif len(result["tier5"]) > 0:
+                for candidate in result["tier5"]:
+                    votes[candidate] += (1 / len(result["tier5"]))
+            elif len(result["tier6"]) > 0:
+                for candidate in result["tier6"]:
+                    votes[candidate] += (1 / len(result["tier6"]))
+            elif len(result["tier7"]) > 0:
+                for candidate in result["tier7"]:
+                    votes[candidate] += (1 / len(result["tier7"]))
+            else:
+                for candidate in result["tier8"]:
+                    votes[candidate] += (1 / len(result["tier8"]))
+        
+        if (bool(_majorirty(votes))):
+            return [votes, removedCandidates]
+        else:
+            print([votes, removedCandidates])
+            if len(removedCandidates) == 8:
+                return ["no winner"]
+            else:
+                minVotes = min(votes.values())
+                minVotesCandidate = [key for key in votes if votes[key] == minVotes] 
+                removedCandidates.append(minVotesCandidate[0])
