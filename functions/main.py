@@ -935,7 +935,7 @@ def _get_normalized_instant_runoff(request_json, conn):
     done = false
     removedCandidates = []
 
-    while(not done) {
+    while(not done):
         for result in results:
             result["tier1"] = list(filter(lambda x: not x in removedCandidates, result["tier1"]))
             result["tier2"] = list(filter(lambda x: not x in removedCandidates, result["tier2"]))
@@ -1038,18 +1038,17 @@ def _get_normalized_instant_runoff(request_json, conn):
                 for candidate in result["tier8"]:
                     votes[candidate] += number_votes * (1 / len(result["tier8"]))
         
-        if (bool(_majorirty(votes))) {
+        if (bool(_majorirty(votes))):
             return [votes, removedCandidates]
-        } else {
+        else:
             minVotes = min(votes.values())
             minVotesCandidate = [key for key in votes if votes[key] == minVotes] 
             removedCandidates.append(key)
-        }
-    }
+        
 
-def _majorirty(votes) {
+def _majorirty(votes):
     neededForMajority = sum(votes.values()) / 2
     return {k:v for (k,v) in votes.items() if v >= neededForMajority}
-}
+
 
 
