@@ -1047,7 +1047,7 @@ def _get_normalized_instant_runoff(request_json, conn):
             else:
                 minVotes = min(votes.values())
                 minVotesCandidate = [key for key in votes if votes[key] == minVotes] 
-                removedCandidates.append(minVotesCandidate)
+                removedCandidates.append(minVotesCandidate[0])
             
         
 
