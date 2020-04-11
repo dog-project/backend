@@ -1041,9 +1041,13 @@ def _get_normalized_instant_runoff(request_json, conn):
         if (bool(_majorirty(votes))):
             return [votes, removedCandidates]
         else:
-            minVotes = min(votes.values())
-            minVotesCandidate = [key for key in votes if votes[key] == minVotes] 
-            removedCandidates.append(minVotesCandidate)
+            if len(removedCandidates) == 8:
+                return ["no winner"]
+            else:
+                minVotes = min(votes.values())
+                minVotesCandidate = [key for key in votes if votes[key] == minVotes] 
+                removedCandidates.append(minVotesCandidate)
+            
         
 
 def _majorirty(votes):
