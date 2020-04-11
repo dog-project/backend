@@ -932,7 +932,7 @@ def _get_normalized_instant_runoff(request_json, conn):
 
         results = cursor.fetchall()
 
-    done = false
+    done = False
     removedCandidates = []
 
     while(not done):
