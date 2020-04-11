@@ -1043,7 +1043,7 @@ def _get_normalized_instant_runoff(request_json, conn):
         else:
             minVotes = min(votes.values())
             minVotesCandidate = [key for key in votes if votes[key] == minVotes] 
-            removedCandidates.append(key)
+            removedCandidates.append(minVotesCandidate)
         
 
 def _majorirty(votes):
